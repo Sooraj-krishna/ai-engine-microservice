@@ -1,0 +1,16 @@
+{
+  "name": "ai-engine-microservice-deps",
+  "version": "1.0.0",
+  "description": "Optional npm dependencies for enhanced testing (axe-core, lighthouse)",
+  "scripts": {
+    "install-test-deps": "npm install --save-dev @axe-core/playwright lighthouse"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "lighthouse": "^11.7.1"
+  },
+  "optionalDependencies": {
+    "@axe-core/playwright": "^4.8.0",
+    "lighthouse": "^11.4.0"
+  }
+}

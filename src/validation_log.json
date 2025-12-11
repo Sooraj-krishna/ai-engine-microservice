@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-11T21:17:24.455512",
+    "total_entries": 0,
+    "validator_version": "2.0.0-enhanced"
+  },
+  "summary": {
+    "total_validations": 0,
+    "safe_validations": 0,
+    "unsafe_validations": 0,
+    "approval_rate": 0,
+    "rejection_rate": 0,
+    "recent_validations": [],
+    "common_errors": [],
+    "last_validation": null
+  },
+  "detailed_logs": []
+}
