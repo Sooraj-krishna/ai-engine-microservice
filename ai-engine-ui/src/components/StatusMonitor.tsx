@@ -131,9 +131,9 @@ export function StatusMonitor({ status }: StatusMonitorProps) {
               <span className="text-sm text-gray-600">AI API</span>
             </div>
             <span className={`text-sm px-2 py-1 rounded ${
-              systemStatus.environment?.has_openrouter_token ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              systemStatus.environment?.has_ai_api ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
-              {systemStatus.environment?.has_openrouter_token ? 'Connected' : 'Not Connected'}
+              {systemStatus.environment?.has_ai_api ? 'Connected' : 'Not Connected'}
             </span>
           </div>
           

@@ -1,6 +1,6 @@
 """
 AI API client for dynamic code generation.
-Uses OpenRouter as the sole backend.
+Uses Gemini API exclusively.
 """
 
 import os
@@ -8,14 +8,11 @@ from typing import Dict, Any
 
 from model_router import ask
 
-# OpenRouter configuration
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
 def query_codegen_api(prompt, language="python"):
     """
-    Query OpenRouter for intelligent code generation with automatic model selection.
+    Query Gemini API for intelligent code generation.
     """
-    return query_openrouter_codegen(prompt, language)
+    return query_gemini_codegen(prompt, language)
 
 def _build_prompt(prompt, language):
     """Build a consistent prompt."""
@@ -35,12 +32,9 @@ REQUIREMENTS:
 
 CODE:
 """
-
-def query_openrouter_codegen(prompt, language="python"):
-    """Generate code using OpenRouter with model auto-selection and fallback."""
-    if not OPENROUTER_API_KEY:
-        raise Exception("OpenRouter API key not configured")
-
+        
+def query_gemini_codegen(prompt, language="python"):
+    """Generate code using Gemini API."""
     try:
         messages = [
             {"role": "system", "content": "You are a helpful AI developer that returns only code."},
@@ -51,7 +45,7 @@ def query_openrouter_codegen(prompt, language="python"):
             min_context=8000 if language.lower() in ("javascript", "typescript") else 4000,
         )
         generated_code = (result.get("content") or "").strip()
-
+        
         # Clean up common formatting issues
         if generated_code.startswith("```"):
             lines = generated_code.split("\n")
@@ -60,27 +54,29 @@ def query_openrouter_codegen(prompt, language="python"):
             if lines and lines[-1].startswith("```"):
                 lines = lines[:-1]
             generated_code = "\n".join(lines)
-
-        print(f"[SUCCESS] OpenRouter generated {len(generated_code)} chars of {language} code using {result.get('model_used')}")
+        
+        model_used = result.get('model_used', 'unknown')
+        print(f"[SUCCESS] Generated {len(generated_code)} chars of {language} code using {model_used}")
         return generated_code
-
+        
     except Exception as e:
-        raise Exception(f"OpenRouter API Error: {str(e)}")
+        raise Exception(f"Gemini API Error: {str(e)}")
 
-def test_openrouter_connection():
-    """Test if OpenRouter API is working correctly."""
+def test_gemini_connection():
+    """Test if Gemini API is working correctly."""
     try:
-        if not OPENROUTER_API_KEY:
-            print("[ERROR] OpenRouter API key not configured")
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("[ERROR] Gemini API key not configured")
             return False
 
         messages = [{"role": "user", "content": "Respond with 'hello'"}]
         result = ask(messages=messages, min_context=2000)
         if result and result.get("content"):
-            print(f"[SUCCESS] OpenRouter API connection successful via {result.get('model_used')}")
+            print(f"[SUCCESS] Gemini API connection successful via {result.get('model_used')}")
             return True
-        print("[ERROR] OpenRouter API returned empty response")
-        return False
+            print("[ERROR] Gemini API returned empty response")
+            return False
     except Exception as e:
-        print(f"[ERROR] OpenRouter API connection failed: {e}")
+        print(f"[ERROR] Gemini API connection failed: {e}")
         return False

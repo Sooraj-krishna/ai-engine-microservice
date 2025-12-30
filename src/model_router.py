@@ -1,124 +1,151 @@
+"""
+Gemini API router for code generation.
+Uses Gemini as the primary and only AI API.
+"""
+
 import os
-import time
-import requests
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
-# Default configuration (prioritized free/efficient coding/debugging models; at least 10)
-PREFERRED_MODELS: List[str] = [
-    # Strong coding/reasoning, large context (often free-tier)
-    "deepseek/deepseek-reasoner",
-    "deepseek/deepseek-chat",
-    "qwen/qwen-2-72b-instruct",
-    "qwen/qwen-2-7b-instruct",
-    # Mixture-of-experts and coding-tuned options
-    "mistralai/mixtral-8x7b-instruct",
-    "mistralai/mistral-7b-instruct",
-    "nousresearch/nous-hermes-2-mixtral-8x7b-sft",
-    "openchat/openchat-7b",
-    # Additional free/low-cost coding-friendly models
-    "snowflake/snowflake-arctic-instruct",
-    "meta-llama/llama-3-8b-instruct",
-    "meta-llama/llama-3-70b-instruct",
-    "tiiuae/falcon-180b-chat",
-]
-ENABLE_FREE_FALLBACK = os.getenv("OPENROUTER_ENABLE_FREE_FALLBACK", "true").lower() == "true"
-FORCE_FREE_ONLY = os.getenv("OPENROUTER_FORCE_FREE_ONLY", "true").lower() == "true"
-MAX_RETRIES = 6
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_REFERRER = os.getenv("OPENROUTER_REFERRER", "http://localhost")
-OPENROUTER_TITLE = os.getenv("OPENROUTER_TITLE", "AI Engine Microservice")
+# Gemini API configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Default to gemini-pro which is more widely available
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
+GEMINI_PRO_MODEL = os.getenv("GEMINI_PRO_MODEL", "gemini-pro")
 
 
-def _fetch_available_models() -> Dict[str, dict]:
-    """Fetch available models from OpenRouter and return a dict keyed by model id."""
-    if not OPENROUTER_API_KEY:
-        return {}
-
+def _get_available_models():
+    """List available Gemini models and return the first one that supports generateContent."""
     try:
-        resp = requests.get(
-            f"{OPENROUTER_BASE_URL}/models",
-            headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            print(f"[OpenRouter] Failed to fetch models: {resp.status_code} {resp.text}")
-            return {}
-        data = resp.json()
-        models = data.get("data", []) or data.get("models", [])
-        model_map = {}
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        # List all available models
+        models = genai.list_models()
+        available = []
         for m in models:
-            model_id = m.get("id")
-            if not model_id:
-                continue
-            # Pricing may include prompt/completion. Consider free if prompt == 0
-            pricing = m.get("pricing") or {}
-            prompt_cost = pricing.get("prompt", pricing.get("input", None))
-            is_free = prompt_cost == 0
-            context_length = m.get("context_length") or m.get("max_context_length")
-            model_map[model_id] = {
-                "id": model_id,
-                "context_length": context_length or 0,
-                "is_free": is_free,
-                "raw": m,
-            }
-        return model_map
+            # Check if model supports generateContent
+            if 'generateContent' in m.supported_generation_methods:
+                available.append(m.name.replace('models/', ''))
+        
+        return available
     except Exception as e:
-        print(f"[OpenRouter] Error fetching models: {e}")
-        return {}
+        print(f"[ModelRouter] Could not list models: {e}")
+        return []
 
 
-def _select_candidates(
-    available: Dict[str, dict],
-    min_context: int,
-    preferred: List[str],
-    enable_free_fallback: bool,
-) -> List[str]:
-    """Build an ordered candidate list respecting preferences, context, and free fallback."""
-    candidates = []
-
-    def eligible(model_id: str) -> bool:
-        info = available.get(model_id)
-        if info is None:
-            return False
-        if FORCE_FREE_ONLY and not info.get("is_free"):
-            return False
-        return info.get("context_length", 0) >= min_context
-
-    # Preferred in order
-    for mid in preferred:
-        if eligible(mid):
-            candidates.append(mid)
-
-    # Free fallbacks (not already included)
-    if enable_free_fallback:
-        free_models = [
-            mid
-            for mid, meta in available.items()
-            if meta.get("is_free")
-            and meta.get("context_length", 0) >= min_context
-            and mid not in candidates
-        ]
-        candidates.extend(free_models)
-
-    # Any remaining models with sufficient context
-    for mid, meta in available.items():
-        if mid in candidates:
-            continue
-        if meta.get("context_length", 0) >= min_context and (not FORCE_FREE_ONLY or meta.get("is_free")):
-            candidates.append(mid)
-
-    return candidates
-
-
-def _should_retry(status_code: int, error_body: str) -> bool:
-    if status_code in (429, 500, 502, 503, 504):
-        return True
-    if "context_length_exceeded" in error_body or "context_length" in error_body:
-        return True
-    if "model_not_available" in error_body or "provider_error" in error_body:
-        return True
-    return False
+def _query_gemini_api(
+    messages: List[Dict[str, str]],
+    model: str = None,
+    timeout: int = 60,
+) -> Dict[str, Any]:
+    """
+    Query Gemini API directly.
+    Returns dict: { model_used, fallbacks_attempted, content, raw_response }
+    """
+    if not GEMINI_API_KEY:
+        raise RuntimeError("Gemini API key not configured")
+    
+    try:
+        import google.generativeai as genai
+        from google.generativeai.types import HarmCategory, HarmBlockThreshold
+    except ImportError:
+        raise RuntimeError("google-generativeai package not installed. Install with: pip install google-generativeai")
+    
+    genai.configure(api_key=GEMINI_API_KEY)
+    
+    # Select model based on context size
+    selected_model = model or GEMINI_MODEL
+    
+    # Get available models first
+    available_models = _get_available_models()
+    if available_models:
+        print(f"[ModelRouter] Available models: {', '.join(available_models[:5])}...")
+    
+    # Convert messages format for Gemini
+    # Gemini expects a single prompt or a list of Content objects
+    prompt_parts = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role == "system":
+            prompt_parts.append(f"System: {content}\n")
+        elif role == "user":
+            prompt_parts.append(f"User: {content}\n")
+        elif role == "assistant":
+            prompt_parts.append(f"Assistant: {content}\n")
+    
+    full_prompt = "".join(prompt_parts)
+    
+    # Build list of models to try
+    # Priority: selected model -> available models -> common fallbacks
+    models_to_try = [selected_model]
+    
+    # Add available models that match our preference
+    if available_models:
+        # Prefer models with "pro" or "flash" in name, or just use first available
+        preferred_available = [m for m in available_models if "pro" in m.lower() or "flash" in m.lower()]
+        if preferred_available:
+            models_to_try.extend([m for m in preferred_available if m not in models_to_try])
+        else:
+            models_to_try.extend([m for m in available_models[:3] if m not in models_to_try])
+    
+    # Add common fallbacks as last resort
+    common_fallbacks = ["gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash", "models/gemini-pro"]
+    models_to_try.extend([m for m in common_fallbacks if m not in models_to_try])
+    
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            # Remove 'models/' prefix if present
+            clean_model_name = model_name.replace('models/', '')
+            model_instance = genai.GenerativeModel(clean_model_name)
+            
+            # Configure safety settings to allow code generation
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            # Generate content with Gemini
+            response = model_instance.generate_content(
+                full_prompt,
+                safety_settings=safety_settings,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    top_p=0.8,
+                    max_output_tokens=2048,
+                )
+            )
+            
+            content = response.text.strip() if response.text else ""
+            
+            if clean_model_name != selected_model:
+                print(f"[ModelRouter] Successfully used model: {clean_model_name} (requested: {selected_model})")
+            
+            return {
+                "model_used": f"gemini:{clean_model_name}",
+                "fallbacks_attempted": [f"gemini:{m.replace('models/', '')}" for m in models_to_try[:models_to_try.index(model_name) + 1]],
+                "content": content,
+                "raw_response": {"text": content, "model": clean_model_name},
+            }
+        except Exception as e:
+            last_error = e
+            error_str = str(e).lower()
+            if "404" in error_str or "not found" in error_str or "not supported" in error_str:
+                # Try next alternative
+                print(f"[ModelRouter] Model {model_name} not available, trying next...")
+                continue
+            else:
+                # Other error, don't retry
+                raise RuntimeError(f"Gemini API error: {str(e)}")
+    
+    # All models failed
+    error_msg = f"Gemini API error: All model alternatives failed. Last error: {str(last_error)}"
+    if available_models:
+        error_msg += f"\nAvailable models: {', '.join(available_models[:10])}"
+    raise RuntimeError(error_msg)
 
 
 def ask(
@@ -128,84 +155,18 @@ def ask(
     preferred_models: List[str] | None = None,
     enable_free_fallback: bool | None = None,
     timeout: int = 60,
+    prefer_gemini: bool | None = None,
 ) -> Dict[str, Any]:
     """
-    Ask OpenRouter with automatic model selection and fallbacks.
+    Query Gemini API for code generation.
+    Uses Gemini Pro for large contexts (100k+ tokens), Flash otherwise.
     Returns dict: { model_used, fallbacks_attempted, content, raw_response }
     """
-    if not OPENROUTER_API_KEY:
-        raise RuntimeError("OpenRouter API key not configured")
-
-    preferred = preferred_models or PREFERRED_MODELS
-    free_fallback = ENABLE_FREE_FALLBACK if enable_free_fallback is None else enable_free_fallback
-
-    available = _fetch_available_models()
-    candidates = _select_candidates(available, min_context, preferred, free_fallback)
-
-    if not candidates:
-        raise RuntimeError("No OpenRouter models available that satisfy context requirements")
-
-    fallbacks: List[str] = []
-    last_error: Tuple[int, str] | None = None
-
-    for attempt, model_id in enumerate(candidates[:MAX_RETRIES], start=1):
-        fallbacks.append(model_id)
-        try:
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "HTTP-Referer": OPENROUTER_REFERRER,
-                "X-Title": OPENROUTER_TITLE,
-            }
-            body = {
-                "model": model_id,
-                "messages": messages,
-                "temperature": 0.1,
-                "top_p": 0.8,
-                "max_tokens": 2000,
-            }
-            resp = requests.post(
-                f"{OPENROUTER_BASE_URL}/chat/completions",
-                headers=headers,
-                json=body,
-                timeout=timeout,
-            )
-
-            if resp.status_code == 200:
-                data = resp.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                return {
-                    "model_used": model_id,
-                    "fallbacks_attempted": fallbacks,
-                    "content": content,
-                    "raw_response": data,
-                }
-
-            # Handle retryable errors
-            error_text = resp.text
-            if _should_retry(resp.status_code, error_text) and attempt < MAX_RETRIES:
-                last_error = (resp.status_code, error_text)
-                time.sleep(1)  # brief backoff
-                continue
-
-            # Non-retryable or out of retries
-            raise RuntimeError(f"OpenRouter error {resp.status_code}: {error_text}")
-
-        except requests.exceptions.Timeout as e:
-            last_error = (408, str(e))
-            if attempt < MAX_RETRIES:
-                time.sleep(1)
-                continue
-            raise RuntimeError(f"OpenRouter timeout: {e}")
-        except requests.exceptions.RequestException as e:
-            last_error = (0, str(e))
-            if attempt < MAX_RETRIES:
-                time.sleep(1)
-                continue
-            raise RuntimeError(f"OpenRouter network error: {e}")
-
-    # If we exit loop without return, all retries failed
-    if last_error:
-        code, text = last_error
-        raise RuntimeError(f"All model attempts failed. Last error {code}: {text}")
-    raise RuntimeError("All model attempts failed for unknown reasons")
-
+    if not GEMINI_API_KEY:
+        raise RuntimeError("Gemini API key not configured")
+    
+    # Use Pro model for very large contexts, Flash for normal
+    gemini_model = GEMINI_PRO_MODEL if min_context >= 100000 else GEMINI_MODEL
+    print(f"[ModelRouter] Using Gemini ({gemini_model}) for context: {min_context} tokens")
+    
+    return _query_gemini_api(messages, model=gemini_model, timeout=timeout)

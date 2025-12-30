@@ -10,6 +10,8 @@ export interface IssueInput {
       name: string;
       code: string;
       language?: string;
+      locationHint?: string;
+      issueDescription?: string;
     }>;
   }>;
 }
@@ -51,6 +53,8 @@ export async function processIssue(
       section: section.name,
       code: section.code,
       language: section.language,
+      locationHint: section.locationHint,
+      issueDescription: section.issueDescription ?? `${issue.title}: ${issue.description}`,
     }))
   );
 

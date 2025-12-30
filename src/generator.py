@@ -20,64 +20,171 @@ except ImportError:
 
 async def prepare_fixes(issues, repo_path=None):
     """
-    Generate ONLY safe, additive code fixes that don't modify existing functionality.
-    Creates new utility files instead of modifying core components.
+    Generate code fixes for detected issues.
+    For bug reports: Fixes bugs in existing files using improved fixer.
+    For optimization issues: Creates utility files (safe, additive).
     Includes comprehensive validation before returning fixes.
     
     Args:
         issues: List of detected issues
         repo_path: Optional path to repository for improved fixing
     """
-    # Check if we should use improved fixer
-    use_improved_fixer = (
-        IMPROVED_FIXER_AVAILABLE and 
-        repo_path and 
-        os.path.exists(repo_path) and
-        os.getenv('USE_IMPROVED_FIXER', 'false').lower() == 'true'
-    )
+    # Separate bugs from optimization issues
+    # Bugs are issues with type 'bug_report' or from enhanced bug detection (accessibility, performance, responsive, etc.)
+    bugs = []
+    optimization_issues = []
     
-    if use_improved_fixer:
-        print(f"[GENERATOR] Using improved incremental fixer...")
-        try:
-            fixes, failed = incremental_fix_bugs(issues, repo_path)
-            print(f"[GENERATOR] Improved fixer: {len(fixes)} fixes, {len(failed)} failed")
-            
-            # Test fixes from improved fixer too
-            test_fixes = os.getenv('TEST_FIXES_BEFORE_APPLY', 'true').lower() == 'true'
-            if test_fixes and fixes:
-                print(f"[GENERATOR] Testing {len(fixes)} improved fixes in isolated environment...")
-                try:
-                    from fix_tester import FixTester
-                    website_url = os.getenv('WEBSITE_URL')
-                    tester = FixTester(repo_path=repo_path)
-                    tested_fixes, failed_tests = await tester.test_fixes(fixes, website_url=website_url)
-                    
-                    if tested_fixes:
-                        print(f"[GENERATOR] ✅ {len(tested_fixes)} improved fixes passed all tests")
-                    if failed_tests:
-                        print(f"[GENERATOR] ⚠️ {len(failed_tests)} improved fixes failed tests")
-                    
-                    return tested_fixes
-                except Exception as e:
-                    print(f"[WARNING] Fix testing failed: {e}, proceeding with improved fixes")
-                    return fixes
-            
-            return fixes
-        except Exception as e:
-            print(f"[WARNING] Improved fixer failed, falling back to standard approach: {e}")
+    print(f"[GENERATOR] Analyzing {len(issues)} issues to separate bugs from optimizations...")
     
-    # Standard approach (original implementation)
+    for issue in issues:
+        issue_type = issue.get('type', '')
+        issue_severity = issue.get('severity', 'low')
+        # Bug types: bug_report, accessibility, performance, responsive, javascript_error, console_error, etc.
+        is_bug = (issue_type == 'bug_report' or 
+                 issue_type in ['accessibility', 'performance', 'responsive', 'javascript_error', 'console_error', 'ui_bug', 'test_framework_error'] or
+                 issue_severity == 'high')
+        
+        if is_bug:
+            bugs.append(issue)
+            print(f"[GENERATOR] Classified as BUG: {issue_type} (severity: {issue_severity})")
+        else:
+            optimization_issues.append(issue)
+            print(f"[GENERATOR] Classified as OPTIMIZATION: {issue_type} (severity: {issue_severity})")
+    
+    print(f"[GENERATOR] Summary: {len(bugs)} bugs, {len(optimization_issues)} optimization issues")
+    
+    all_fixes = []
+    
+    # STEP 1: Fix bugs FIRST (before optimizations)
+    if bugs:
+        print(f"[GENERATOR] ========================================")
+        print(f"[GENERATOR] STEP 1: Processing {len(bugs)} bugs first...")
+        print(f"[GENERATOR] ========================================")
+        
+        # Check if we should use improved fixer for bugs
+        use_improved_fixer = (
+            IMPROVED_FIXER_AVAILABLE and 
+            repo_path and 
+            os.path.exists(repo_path) and
+            (os.getenv('USE_IMPROVED_FIXER', 'true').lower() == 'true' or len(bugs) > 0)
+        )
+        
+        if use_improved_fixer:
+            print(f"[GENERATOR] Using improved incremental fixer for {len(bugs)} bugs...")
+            try:
+                bug_fixes, failed = incremental_fix_bugs(bugs, repo_path)
+                print(f"[GENERATOR] Improved fixer: {len(bug_fixes)} bug fixes, {len(failed)} failed")
+                
+                if bug_fixes:
+                    # Convert improved fixer format to standard format
+                    for fix in bug_fixes:
+                        # Use the fix content directly (improved fixer provides the fixed code)
+                        fix_path = fix.get('path', '')
+                        # Convert absolute path to relative path if repo_path is provided
+                        if repo_path and os.path.isabs(fix_path) and fix_path.startswith(repo_path):
+                            fix_path = os.path.relpath(fix_path, repo_path)
+                        elif repo_path and os.path.isabs(fix_path):
+                            # If it's an absolute path but not in repo, try to find relative
+                            fix_path = os.path.basename(fix_path)
+                        
+                        all_fixes.append({
+                            'path': fix_path.replace('\\', '/'),  # Normalize path separators
+                            'content': fix.get('content', ''),  # The fixed code from improved fixer
+                            'description': fix.get('description', 'Bug fix'),
+                            'bug': fix.get('bug', {})
+                        })
+                    
+                    print(f"[GENERATOR] ✅ Generated {len(bug_fixes)} bug fixes")
+                else:
+                    print(f"[GENERATOR] ⚠️ Improved fixer returned no fixes, will try AI-based fix generation")
+                    # Fall through to generate fixes using AI
+                    bug_fixes = None
+                    
+            except Exception as e:
+                print(f"[WARNING] Improved fixer failed: {e}")
+                import traceback
+                print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+                bug_fixes = None
+        
+        # Fallback: Generate bug fixes using AI if improved fixer failed or unavailable
+        if not bug_fixes or len(bug_fixes) == 0:
+            print(f"[GENERATOR] Generating bug fixes using AI API...")
+            try:
+                for i, bug in enumerate(bugs, 1):
+                    print(f"[GENERATOR] Generating fix for bug {i}/{len(bugs)}: {bug.get('type', 'unknown')}")
+                    
+                    bug_type = bug.get('type', 'unknown')
+                    bug_description = bug.get('description', '')
+                    bug_details = bug.get('details', '')
+                    
+                    # Generate fix prompt
+                    fix_prompt = f"""
+You are fixing a {bug_type} bug in a web application.
+
+BUG DESCRIPTION: {bug_description}
+BUG DETAILS: {bug_details}
+
+REQUIREMENTS:
+1. Generate a complete fix for this bug
+2. Fix the actual code that has the bug
+3. Return the FULL fixed file content, not just a patch
+4. Ensure the fix resolves the issue described
+5. Maintain code quality and best practices
+
+Please provide the complete fixed code for the file that needs to be fixed.
+If you cannot determine the exact file, provide a fix that can be applied to the relevant file.
+"""
+                    
+                    try:
+                        # Generate fix using AI
+                        fixed_code = query_codegen_api(fix_prompt, language="javascript")
+                        
+                        if fixed_code and len(fixed_code.strip()) > 0:
+                            # Determine file path based on bug type
+                            if bug_type in ['accessibility', 'responsive', 'performance']:
+                                file_path = "src/app/page.tsx"  # Default for Next.js
+                            elif bug_type == 'javascript_error':
+                                file_path = "src/app/page.tsx"
+                            else:
+                                file_path = bug.get('target_file', 'src/app/page.tsx')
+                            
+                            all_fixes.append({
+                                'path': file_path,
+                                'content': fixed_code,
+                                'description': f"Fix for {bug_type}: {bug_description[:100]}",
+                                'bug': bug
+                            })
+                            print(f"[GENERATOR] ✅ Generated AI fix for {bug_type}")
+                        else:
+                            print(f"[GENERATOR] ⚠️ AI returned empty fix for {bug_type}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to generate AI fix for bug {i}: {e}")
+                        continue
+                        
+            except Exception as e:
+                print(f"[ERROR] AI-based bug fix generation failed: {e}")
+        
+        print(f"[GENERATOR] ✅ Step 1 complete: {len(all_fixes)} bug fixes generated")
+    
+    # STEP 2: Generate optimization utilities AFTER bugs are fixed
+    
+    # STEP 2: Generate optimization utilities AFTER bugs are fixed
     validator = CodeValidator()
-    fixes = []
+    optimization_fixes = []
     
-    print(f"[GENERATOR] Processing {len(issues)} detected issues...")
+    if optimization_issues:
+        print(f"[GENERATOR] ========================================")
+        print(f"[GENERATOR] STEP 2: Processing {len(optimization_issues)} optimization issues (will create utility files)...")
+        print(f"[GENERATOR] ========================================")
+    else:
+        print(f"[GENERATOR] No optimization issues to process, only bug fixes")
     
-    for i, issue in enumerate(issues, 1):
+    for i, issue in enumerate(optimization_issues, 1):
         try:
             issue_type = issue.get('type')
             issue_data = issue.get('data', {})
             
-            print(f"[GENERATOR] Processing issue {i}/{len(issues)}: {issue_type}")
+            print(f"[GENERATOR] Processing issue {i}/{len(optimization_issues)}: {issue_type}")
             
             # Only process issues marked as safe
             if not issue.get('safe_mode', False):
@@ -120,8 +227,8 @@ async def prepare_fixes(issues, repo_path=None):
                 fix = create_generic_utility(issue, issue_data)
             
             if fix:
-                fixes.append(fix)
-                print(f"[SUCCESS] Generated fix for {issue_type}: {fix.get('path')}")
+                optimization_fixes.append(fix)
+                print(f"[SUCCESS] Generated utility for {issue_type}: {fix.get('path')}")
             else:
                 print(f"[ERROR] Failed to generate fix for {issue_type}")
                 
@@ -130,13 +237,26 @@ async def prepare_fixes(issues, repo_path=None):
             print(traceback.format_exc())
             continue
     
-    print(f"[GENERATOR] Generated {len(fixes)} total fixes")
+    # Combine bug fixes and optimization fixes
+    all_fixes.extend(optimization_fixes)
+    
+    bug_fix_count = len([f for f in all_fixes if 'bug' in f]) if all_fixes else 0
+    print(f"[GENERATOR] ========================================")
+    print(f"[GENERATOR] SUMMARY:")
+    print(f"[GENERATOR] - Bug fixes generated: {bug_fix_count}")
+    print(f"[GENERATOR] - Utility files generated: {len(optimization_fixes)}")
+    print(f"[GENERATOR] - Total fixes: {len(all_fixes)}")
+    print(f"[GENERATOR] ========================================")
+    
+    if not all_fixes:
+        print("[GENERATOR] No fixes generated")
+        return []
     
     # VALIDATE ALL FIXES before returning
     print(f"[GENERATOR] Starting validation process...")
-    safe_fixes = validator.validate_all_fixes(fixes)
+    safe_fixes = validator.validate_all_fixes(all_fixes)
     
-    print(f"[GENERATOR] Validation complete: {len(safe_fixes)}/{len(fixes)} fixes approved as safe")
+    print(f"[GENERATOR] Validation complete: {len(safe_fixes)}/{len(all_fixes)} fixes approved as safe")
     
     # TEST FIXES in isolated environment (if enabled)
     test_fixes = os.getenv('TEST_FIXES_BEFORE_APPLY', 'true').lower() == 'true'

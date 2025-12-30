@@ -40,6 +40,10 @@ from rollback_manager import RollbackManager
 from validator import CodeValidator
 from configure_endpoint import router as config_router
 from log_streamer import log_streamer, QueueLogStream
+from log_summary import log_summarizer
+from model_router import _query_gemini_api
+from pydantic import BaseModel
+from typing import List, Dict
 import contextlib
 import sys
 
@@ -136,6 +140,11 @@ def health_check():
             }
         )
 
+@app.get("/log-summary")
+def log_summary():
+    """Compact error/warning/info summary for AI consumption."""
+    return log_summarizer.summary()
+
 @app.post("/run")
 def run_engine(background_tasks: BackgroundTasks):
     """Trigger AI maintenance cycle with full safety protection."""
@@ -164,7 +173,8 @@ def get_detailed_status():
                 "github_repo": os.getenv("GITHUB_REPO"),
                 "monitoring_mode": os.getenv("MONITORING_MODE"),
                 "has_github_token": bool(os.getenv("GITHUB_TOKEN")),
-                "has_openrouter_token": bool(os.getenv("OPENROUTER_API_KEY")),
+                "has_gemini_token": bool(os.getenv("GEMINI_API_KEY")),
+                "has_ai_api": bool(os.getenv("GEMINI_API_KEY")),
                 "has_ga_credentials": bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS")),
                 "use_improved_fixer": os.getenv("USE_IMPROVED_FIXER", "false").lower() == "true",
                 "test_fixes_before_apply": os.getenv("TEST_FIXES_BEFORE_APPLY", "true").lower() == "true",
@@ -181,6 +191,27 @@ def get_detailed_status():
         return JSONResponse(
             status_code=500,
             content={"error": f"Status check failed: {str(e)}"}
+        )
+
+class GeminiRequest(BaseModel):
+    messages: List[Dict[str, str]]
+    model: str = None
+    timeoutMs: int = 60000
+
+@app.post("/api/gemini")
+async def gemini_api_endpoint(request: GeminiRequest):
+    """Backend endpoint for Gemini API calls (used by frontend model router)."""
+    try:
+        result = _query_gemini_api(
+            messages=request.messages,
+            model=request.model,
+            timeout=int(request.timeoutMs / 1000) if request.timeoutMs else 60
+        )
+        return JSONResponse(content=result)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Gemini API error: {str(e)}"}
         )
 
 @app.post("/receive-frontend-data")

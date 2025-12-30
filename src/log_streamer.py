@@ -2,6 +2,7 @@ import asyncio
 import queue
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
+from log_summary import log_summarizer
 
 class LogStreamer:
     def __init__(self):
@@ -48,6 +49,7 @@ class QueueLogStream:
     def write(self, message: str):
         if message.strip():
             self.streamer.add_log(message)
+            log_summarizer.add(message)
 
     def flush(self):
         pass

@@ -81,21 +81,42 @@ class CodeValidator:
         path = fix.get("path", "")
         content = fix.get("content", "")
         description = fix.get("description", "")
+        bug = fix.get("bug", {})
         
         warnings = []
         errors = []
         
         print(f"[VALIDATOR] Validating fix for: {path}")
         
-        # 1. Check safe file location
+        # Determine if this is a bug fix (modifying existing file) or utility file (new file)
+        # Check multiple indicators that this is a bug fix
+        has_bug_field = bool(bug) and isinstance(bug, dict) and len(bug) > 0
+        description_mentions_bug = 'bug' in description.lower() or 'fix for' in description.lower() or 'fixing' in description.lower()
+        is_bug_fix = has_bug_field or (description_mentions_bug and not any(path.startswith(prefix) for prefix in self.safe_file_prefixes))
+        
+        if is_bug_fix:
+            print(f"[VALIDATOR] ✅ Detected bug fix - allowing modification to existing file: {path}")
+            # For bug fixes: Allow modifications to existing files, but check for dangerous patterns
+            # Skip the "safe file location" check for bug fixes
+            # Still validate for dangerous patterns and syntax
+            
+            # Check if path is reasonable (not system files, not config files)
+            if self.is_dangerous_file_path(path):
+                errors.append(f"Dangerous file path for bug fix: {path}")
+                print(f"[VALIDATOR] ⚠️ Bug fix targets dangerous file path: {path}")
+        else:
+            # For utility files: Strict validation - must be in safe location
+            print(f"[VALIDATOR] Detected utility file - checking safe location: {path}")
         if not self.is_safe_new_file(path):
             errors.append(f"Unsafe file location: {path}")
+                print(f"[VALIDATOR] ❌ Utility file not in safe location: {path}")
         
         # 2. Enhanced dangerous pattern checking with context awareness
         dangerous_matches = self.check_dangerous_patterns_with_context(content)
         errors.extend(dangerous_matches)
         
-        # 3. Check for required safety markers
+        # 3. Check for required safety markers (only for utility files)
+        if not is_bug_fix:
         safety_markers_found = 0
         safety_markers_details = []
         
@@ -275,6 +296,24 @@ class CodeValidator:
         targets_important_file = any(important in path.lower() for important in important_files)
         
         return is_safe_prefix and not has_path_traversal and not is_system_file and not targets_important_file
+    
+    def is_dangerous_file_path(self, path):
+        """Check if a file path is dangerous even for bug fixes."""
+        # Must not contain path traversal attempts
+        has_path_traversal = '..' in path or path.startswith('/')
+        
+        # Must not target system files
+        system_paths = ['etc/', 'var/', 'usr/', 'root/', '/home/', 'system', 'windows', 'boot/', 'dev/', 'proc/']
+        is_system_file = any(system in path.lower() for system in system_paths)
+        
+        # Must not target critical config files (even for bug fixes)
+        critical_files = ['.env', 'dockerfile', 'docker-compose', 'makefile', 'package-lock.json']
+        targets_critical_file = any(critical in path.lower() for critical in critical_files)
+        
+        # Allow package.json modifications (sometimes needed for bug fixes)
+        # But warn about it
+        
+        return has_path_traversal or is_system_file or targets_critical_file
     
     def validate_all_fixes(self, fixes):
         """Validate all fixes and return only safe ones."""

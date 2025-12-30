@@ -6,7 +6,6 @@ Handles configuration updates from the web UI
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
-import json
 from pathlib import Path
 
 router = APIRouter()
@@ -49,7 +48,8 @@ GOOGLE_APPLICATION_CREDENTIALS=/home/devils_hell/ai-engine-microservice/ai-engin
 GITHUB_TOKEN={github_token}
 GITHUB_REPO={config.githubRepo}
 GEMINI_API_KEY={gemini_api_key}
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-1.5-flash-latest
+GEMINI_PRO_MODEL=gemini-1.5-pro-latest
 
 # Advanced options
 USE_IMPROVED_FIXER={'true' if config.useImprovedFixer else 'false'}
@@ -80,6 +80,7 @@ TEST_FIXES_BEFORE_APPLY={'true' if config.testFixesBeforeApply else 'false'}
                 "monitoring_mode": config.monitoringMode,
                 "has_github_token": bool(github_token),
                 "has_gemini_token": bool(gemini_api_key),
+                "has_ai_api": bool(gemini_api_key),
                 "has_ga_property": bool(ga_property_id),
                 "use_improved_fixer": config.useImprovedFixer,
                 "test_fixes_before_apply": config.testFixesBeforeApply
@@ -97,12 +98,15 @@ async def get_configuration():
     """
     Get current configuration status.
     """
+    has_gemini = bool(os.getenv("GEMINI_API_KEY"))
+    
     return {
         "website_url": os.getenv("WEBSITE_URL"),
         "github_repo": os.getenv("GITHUB_REPO"),
         "monitoring_mode": os.getenv("MONITORING_MODE"),
         "has_github_token": bool(os.getenv("GITHUB_TOKEN")),
-        "has_openrouter_token": bool(os.getenv("OPENROUTER_API_KEY")),
+        "has_gemini_token": has_gemini,
+        "has_ai_api": has_gemini,
         "has_ga_property": bool(os.getenv("GA4_PROPERTY_ID")),
         "use_improved_fixer": os.getenv("USE_IMPROVED_FIXER", "false").lower() == "true",
         "test_fixes_before_apply": os.getenv("TEST_FIXES_BEFORE_APPLY", "true").lower() == "true"
