@@ -292,23 +292,46 @@ def incremental_fix_bugs(bugs, repo_path):
         
         # Validate fix
         if validator.validate_fix(fix['fixed']):
+            rel_path = os.path.relpath(file_path, repo_path) if repo_path else file_path
             fixes.append({
-                'path': file_path,
+                'path': rel_path,
                 'content': fix['fixed'],
                 'diff': fix['diff'],
                 'description': f"Fix for {bug.get('type')}: {bug.get('description', '')}",
                 'bug': bug
             })
-            print(f"[SUCCESS] Generated and validated fix for {bug.get('type')}")
+            print(f"[IMPROVED_FIXER] ✅ Generated and validated fix for {bug.get('type')}")
+            print(f"[IMPROVED_FIXER]    Target file: {rel_path}")
+            print(f"[IMPROVED_FIXER]    Fix description: {bug.get('description', '')[:100]}")
+            if fix['diff']:
+                diff_lines = fix['diff'].split('\n')[:10]  # Show first 10 lines of diff
+                print(f"[IMPROVED_FIXER]    Diff preview:")
+                for line in diff_lines:
+                    if line.startswith('+'):
+                        print(f"[IMPROVED_FIXER]      {line[:80]}")
         else:
-            print(f"[SKIP] Fix failed validation")
+            print(f"[IMPROVED_FIXER] ❌ Fix failed validation")
+            print(f"[IMPROVED_FIXER]    Bug: {bug.get('type')} - {bug.get('description', '')[:80]}")
             failed_fixes.append({
                 'bug': bug,
                 'reason': 'Failed validation',
                 'fix': fix
             })
     
-    print(f"[IMPROVED_FIXER] Generated {len(fixes)} fixes, {len(failed_fixes)} failed")
+    print(f"[IMPROVED_FIXER] ========================================")
+    print(f"[IMPROVED_FIXER] SUMMARY:")
+    print(f"[IMPROVED_FIXER] - Total bugs processed: {len(sorted_bugs)}")
+    print(f"[IMPROVED_FIXER] - Fixes generated: {len(fixes)}")
+    print(f"[IMPROVED_FIXER] - Failed fixes: {len(failed_fixes)}")
+    if failed_fixes:
+        print(f"[IMPROVED_FIXER] Failed fix reasons:")
+        failure_reasons = {}
+        for failed in failed_fixes:
+            reason = failed['reason']
+            failure_reasons[reason] = failure_reasons.get(reason, 0) + 1
+        for reason, count in failure_reasons.items():
+            print(f"[IMPROVED_FIXER]   - {reason}: {count}")
+    print(f"[IMPROVED_FIXER] ========================================")
     
     return fixes, failed_fixes
 

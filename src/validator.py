@@ -107,8 +107,8 @@ class CodeValidator:
         else:
             # For utility files: Strict validation - must be in safe location
             print(f"[VALIDATOR] Detected utility file - checking safe location: {path}")
-        if not self.is_safe_new_file(path):
-            errors.append(f"Unsafe file location: {path}")
+            if not self.is_safe_new_file(path):
+                errors.append(f"Unsafe file location: {path}")
                 print(f"[VALIDATOR] ❌ Utility file not in safe location: {path}")
         
         # 2. Enhanced dangerous pattern checking with context awareness
@@ -117,16 +117,16 @@ class CodeValidator:
         
         # 3. Check for required safety markers (only for utility files)
         if not is_bug_fix:
-        safety_markers_found = 0
-        safety_markers_details = []
-        
-        for pattern in self.required_safety_patterns:
-            if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
-                safety_markers_found += 1
-                safety_markers_details.append(pattern)
-        
-        if safety_markers_found < 2:
-            warnings.append(f"Only {safety_markers_found}/3 required safety markers found: {safety_markers_details}")
+            safety_markers_found = 0
+            safety_markers_details = []
+            
+            for pattern in self.required_safety_patterns:
+                if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+                    safety_markers_found += 1
+                    safety_markers_details.append(pattern)
+            
+            if safety_markers_found < 2:
+                warnings.append(f"Only {safety_markers_found}/3 required safety markers found: {safety_markers_details}")
         
         # 4. Enhanced syntax validation
         if path.endswith(('.js', '.jsx')):

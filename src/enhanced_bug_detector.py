@@ -434,6 +434,86 @@ async def detect_console_errors(url):
     
     return bugs
 
+async def detect_static_code_issues(repo_path):
+    """
+    Detect static code issues like incomplete functions, TODOs, etc.
+    """
+    bugs = []
+    if not repo_path or not os.path.exists(repo_path):
+        return bugs
+
+    try:
+        # Walk through the repo
+        for root, _, files in os.walk(repo_path):
+            if 'node_modules' in root or '.git' in root or '__pycache__' in root:
+                continue
+                
+            for file in files:
+                if not file.endswith(('.js', '.jsx', '.ts', '.tsx', '.py', '.html', '.css')):
+                    continue
+                    
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, repo_path)
+                
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        lines = content.split('\n')
+                        
+                        # 1. Check for TODOs/FIXMEs
+                        for i, line in enumerate(lines, 1):
+                            if 'TODO' in line or 'FIXME' in line:
+                                bugs.append({
+                                    "type": "incomplete_code",
+                                    "severity": "medium",
+                                    "description": "Incomplete code detected (TODO/FIXME)",
+                                    "details": f"Found '{line.strip()}' in {rel_path} at line {i}",
+                                    "target_file": rel_path, # Helping the generator know where to fix
+                                    "data": {
+                                        "type": "TODO Comment",
+                                        "file": rel_path,
+                                        "line": i
+                                    }
+                                })
+                        
+                        # 2. Check for empty function blocks (simple heuristic)
+                        # JS/TS: function ... {} or () => {}
+                        if re.search(r'(function\s+\w+\s*\(.*?\)\s*\{\s*\}|=>\s*\{\s*\})', content):
+                            bugs.append({
+                                "type": "incomplete_code",
+                                "severity": "high",
+                                "description": "Empty function detected",
+                                "details": f"Empty function body found in {rel_path}. This might be a placeholder.",
+                                "target_file": rel_path,
+                                "data": {
+                                    "type": "Empty Function",
+                                    "file": rel_path
+                                }
+                            })
+                            
+                        # Python: def ...:\n\s*pass
+                        if file.endswith('.py') and re.search(r'def\s+\w+\s*\(.*?\):\s*\n\s*pass', content):
+                             bugs.append({
+                                "type": "incomplete_code",
+                                "severity": "high",
+                                "description": "Empty Python function detected",
+                                "details": f"Empty python function (pass) found in {rel_path}.",
+                                "target_file": rel_path,
+                                "data": {
+                                    "type": "Empty Function",
+                                    "file": rel_path
+                                }
+                            })
+
+                except Exception as e:
+                    # Ignore read errors
+                    pass
+                    
+    except Exception as e:
+        print(f"[ERROR] Static analysis failed: {e}")
+
+    return bugs
+
 async def comprehensive_bug_detection(url, github_repo_path=None):
     """
     Run all bug detection strategies and return comprehensive results.
@@ -448,6 +528,7 @@ async def comprehensive_bug_detection(url, github_repo_path=None):
         detect_performance_issues(url),
         detect_responsive_issues(url),
         detect_console_errors(url),
+        detect_static_code_issues(github_repo_path),
         return_exceptions=True
     )
     

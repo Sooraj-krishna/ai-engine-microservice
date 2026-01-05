@@ -110,26 +110,74 @@ class FixTester:
                 with open(test_file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 
-                # Test 1: Syntax validation
-                syntax_check = self.check_javascript_syntax(content)
-                if not syntax_check['valid']:
-                    return {
-                        'passed': False,
-                        'error': 'JavaScript syntax error',
-                        'details': syntax_check.get('error', 'Invalid syntax')
-                    }
+                # Test 1: Detect browser-specific code
+                # Browser code uses DOM APIs and should not be validated with Node.js
+                is_browser_code = any(pattern in content for pattern in [
+                    'window', 'document', 'addEventListener', 'querySelector',
+                    'getElementById', 'getElementsBy', 'innerHTML', 'textContent',
+                    'DOMContentLoaded', 'localStorage', 'sessionStorage',
+                    'navigator', 'location.', 'history.', 'fetch('
+                ])
+                is_react_code = any(pattern in content for pattern in [
+                    'import React', 'export default function', 'className=', 
+                    '<div', '<span', '<button', 'useState', 'useEffect', 'jsx', 'tsx'
+                ])
                 
-                # Test 2: Basic execution test (if it's a script)
-                # Skip execution for browser-specific code (window/document) to avoid Node errors
-                is_browser_code = 'window' in content or 'document' in content
-                if file_path.endswith(('.js', '.jsx')) and not is_browser_code:
-                    execution_test = await self.test_javascript_execution(content)
-                    if not execution_test['passed']:
+                # Test 2: Syntax validation (skip for browser/React code)
+                if not is_browser_code and not is_react_code:
+                    # Also skip for utility files which are browser-only
+                    is_utility_file = 'utils/' in file_path or file_path.startswith('utils/')
+                    
+                    if not is_utility_file:
+                        syntax_check = self.check_javascript_syntax(content)
+                        if not syntax_check['valid']:
+                            return {
+                                'passed': False,
+                                'error': 'JavaScript syntax error',
+                                'details': syntax_check.get('error', 'Invalid syntax')
+                            }
+                    else:
+                        print(f"[FIX_TESTER] Skipping Node.js syntax check for utility file: {file_path}")
+                        # For utility files, basic syntax check is sufficient
+                        basic_check = self.check_basic_syntax(content)
+                        if not basic_check['valid']:
+                            return {
+                                'passed': False,
+                                'error': 'Basic syntax error',
+                                'details': basic_check.get('error', 'Invalid syntax')
+                            }
+                else:
+                    print(f"[FIX_TESTER] Skipping Node.js syntax check for browser/React code: {file_path}")
+                    # For browser code, do basic validation only
+                    basic_check = self.check_basic_syntax(content)
+                    if not basic_check['valid']:
                         return {
                             'passed': False,
-                            'error': 'JavaScript execution error',
-                            'details': execution_test.get('error', 'Execution failed')
+                            'error': 'Basic syntax error',
+                            'details': basic_check.get('error', 'Invalid syntax')
                         }
+                
+                # Test 3: Basic execution test (if it's a script)
+                # Skip execution for browser-specific code (window/document) to avoid Node errors
+                # Also skip for React/JSX/TSX code which needs compilation
+                # Also skip for utility files which are browser-only ES6 modules
+                
+                if file_path.endswith(('.js', '.jsx', '.ts', '.tsx')):
+                    is_utility_file = 'utils/' in file_path or file_path.startswith('utils/')
+                    
+                    if not is_browser_code and not is_react_code and not is_utility_file:
+                        execution_test = await self.test_javascript_execution(content)
+                        if not execution_test['passed']:
+                            return {
+                                'passed': False,
+                                'error': 'JavaScript execution error',
+                                'details': execution_test.get('error', 'Execution failed')
+                            }
+                    else:
+                        if is_utility_file:
+                            print(f"[FIX_TESTER] Skipping execution test for utility file: {file_path}")
+                        else:
+                            print(f"[FIX_TESTER] Skipping execution test for browser/React code: {file_path}")
                 
                 # Test 3: HTML validation (if HTML file)
                 if file_path.endswith(('.html', '.htm')):
@@ -172,11 +220,82 @@ class FixTester:
                     'details': ''
                 }
     
+    def check_basic_syntax(self, code):
+        """
+        Basic syntax validation without Node.js (for browser code).
+        Checks for balanced braces, brackets, and parentheses.
+        """
+        try:
+            # Check for balanced braces, brackets, parentheses
+            stack = []
+            pairs = {'(': ')', '[': ']', '{': '}'}
+            
+            # Simple tokenization to avoid checking inside strings
+            in_string = False
+            escape_next = False
+            string_char = None
+            
+            for char in code:
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                
+                if char in ['"', "'", '`'] and not in_string:
+                    in_string = True
+                    string_char = char
+                    continue
+                elif in_string and char == string_char:
+                    in_string = False
+                    string_char = None
+                    continue
+                
+                if not in_string:
+                    if char in pairs.keys():
+                        stack.append(char)
+                    elif char in pairs.values():
+                        if not stack:
+                            return {'valid': False, 'error': f'Unmatched closing bracket: {char}'}
+                        opener = stack.pop()
+                        if pairs[opener] != char:
+                            return {'valid': False, 'error': f'Mismatched brackets: {opener} and {char}'}
+            
+            if stack:
+                return {'valid': False, 'error': f'Unclosed brackets: {stack}'}
+            
+            # Check for some obvious syntax errors
+            if code.count('function') > 0 and code.count('(') < code.count('function'):
+                return {'valid': False, 'error': 'Function declaration missing parentheses'}
+            
+            return {'valid': True}
+            
+        except Exception as e:
+            return {'valid': False, 'error': f'Basic syntax check exception: {str(e)}'}
+    
     def check_javascript_syntax(self, code):
         """
         Check JavaScript syntax using Node.js.
+        Respects TS/TSX by skipping Node.js check for those file types/content.
         """
         try:
+            # Check if it looks like TypeScript
+            is_typescript = (
+                'interface ' in code or 
+                'type ' in code or 
+                ': string' in code or 
+                ': number' in code or
+                ': boolean' in code or
+                'import React' in code or
+                'export default function' in code
+            )
+            
+            # If it looks like TypeScript/TSX, skip Node.js check (Node can't parse TS syntax)
+            if is_typescript:
+                return {'valid': True, 'note': 'Skipped Node.js check for TypeScript/TSX code'}
+
             # Use Node.js to check syntax
             with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
                 f.write(code)

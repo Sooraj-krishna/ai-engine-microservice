@@ -7,6 +7,7 @@ import { StatusMonitor } from '@/components/StatusMonitor';
 import { Header } from '@/components/Header';
 import { IdentifiedBugs } from '@/components/IdentifiedBugs';
 import { LogReport } from '@/components/LogReport';
+import FeatureRecommendations from '@/components/FeatureRecommendations';
 
 export default function Home() {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -76,6 +77,11 @@ export default function Home() {
         {/* Simple Log Report for non-technical users */}
         <div className="mt-8">
           <LogReport logs={logs} />
+        </div>
+
+        {/* Feature Recommendations - Competitive Analysis */}
+        <div className="mt-8">
+          <FeatureRecommendations />
         </div>
 
         {/* Logs Display */}

@@ -227,6 +227,117 @@ def manual_rollback(background_tasks: BackgroundTasks):
     background_tasks.add_task(perform_manual_rollback)
     return {"message": "Manual rollback initiated", "timestamp": datetime.now().isoformat()}
 
+# Competitive Analysis Endpoints
+@app.post("/analyze-competitors")
+async def analyze_competitors(competitor_urls: list[str] = None):
+    """
+    Analyze competitor sites and generate feature recommendations.
+    If competitor_urls not provided, uses COMPETITOR_URLS from .env
+    """
+    print("[INFO] Competitive analysis requested")
+    
+    # Get competitor URLs from request or environment
+    if not competitor_urls:
+        competitor_urls_str = os.getenv("COMPETITOR_URLS", "")
+        competitor_urls = [url.strip() for url in competitor_urls_str.split(",") if url.strip()]
+    
+    if not competitor_urls:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "No competitor URLs provided. Add COMPETITOR_URLS to .env or pass URLs in request body"}
+        )
+    
+    # Check if enabled
+    if not os.getenv("ENABLE_COMPETITIVE_ANALYSIS", "true").lower() == "true":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Competitive analysis is disabled. Set ENABLE_COMPETITIVE_ANALYSIS=true in .env"}
+        )
+    
+    own_site_url = os.getenv("WEBSITE_URL")
+    if not own_site_url:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "WEBSITE_URL not configured in .env"}
+        )
+    
+    try:
+        from competitive_analyzer import CompetitiveAnalyzer
+        analyzer = CompetitiveAnalyzer()
+        
+        analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls)
+        
+        # Store analysis globally for /feature-recommendations endpoint
+        global competitive_analysis_results
+        competitive_analysis_results = analysis
+        
+        return JSONResponse(content=analysis)
+        
+    except Exception as e:
+        print(f"[ERROR] Competitive analysis failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Competitive analysis failed: {str(e)}"}
+        )
+
+@app.get("/feature-recommendations")
+async def get_feature_recommendations():
+    """Get prioritized feature recommendations from last competitive analysis."""
+    global competitive_analysis_results
+    
+    if not competitive_analysis_results:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "No competitive analysis results available. Run /analyze-competitors first"}
+        )
+    
+    return JSONResponse(content={
+        "analysis_date": competitive_analysis_results.get("analysis_date"),
+        "feature_gaps": competitive_analysis_results.get("feature_gaps", []),
+        "summary": competitive_analysis_results.get("summary", {})
+    })
+
+@app.post("/select-feature")
+async def select_feature_to_implement(feature_id: str):
+    """
+    User selects which feature to implement next.
+    For MVP: Just logs the selection (no actual implementation).
+    """
+    global competitive_analysis_results
+    
+    if not competitive_analysis_results:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "No competitive analysis results available"}
+        )
+    
+    # Find the selected feature
+    feature_gaps = competitive_analysis_results.get("feature_gaps", [])
+    selected_feature = next((f for f in feature_gaps if f.get("id") == feature_id), None)
+    
+    if not selected_feature:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Feature {feature_id} not found"}
+        )
+    
+    # For MVP: Just log the selection
+    print(f"[COMPETITIVE_ANALYSIS] User selected feature for implementation:")
+    print(f"[COMPETITIVE_ANALYSIS] - ID: {feature_id}")
+    print(f"[COMPETITIVE_ANALYSIS] - Name: {selected_feature.get('name')}")
+    print(f"[COMPETITIVE_ANALYSIS] - Priority Score: {selected_feature.get('priority_score')}")
+    print(f"[COMPETITIVE_ANALYSIS] - Estimated Effort: {selected_feature.get('estimated_effort')}")
+    
+    return JSONResponse(content={
+        "message": f"Feature '{selected_feature.get('name')}' selected for future implementation",
+        "feature": selected_feature,
+        "note": "Feature selection logged. Implementation planning will be added in future updates."
+    })
+
+# Global variable to store competitive analysis results
+competitive_analysis_results = None
+
+
 def perform_manual_rollback():
     """Perform manual rollback of recent changes."""
     try:

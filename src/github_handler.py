@@ -21,7 +21,7 @@ def clone_or_pull_repo():
 
     # Construct the authenticated URL (only if token is valid)
     if token and token.strip() and token != "None":
-    repo_url = f"https://{token}@github.com/{repo_name}.git"
+        repo_url = f"https://{token}@github.com/{repo_name}.git"
     else:
         # Try without token (for public repos) or use SSH
         repo_url = f"https://github.com/{repo_name}.git"
@@ -79,8 +79,8 @@ def clone_or_pull_repo():
                 if current_branch:
                     origin.pull(current_branch)
                 else:
-            origin.pull()
-            print("[SUCCESS] Pulled latest changes.")
+                    origin.pull()
+                print("[SUCCESS] Pulled latest changes.")
             except Exception as pull_error:
                 error_str = str(pull_error).lower()
                 if "401" in error_str or "authentication" in error_str or "invalid" in error_str or "bad credentials" in error_str:
@@ -115,7 +115,7 @@ def clone_or_pull_repo():
             print(f"[INFO] Re-cloning repository to ensure clean state...")
             import shutil
             if os.path.exists(REPO_PATH):
-            shutil.rmtree(REPO_PATH)
+                shutil.rmtree(REPO_PATH)
             return clone_or_pull_repo()
     else:
         try:
@@ -129,8 +129,8 @@ def clone_or_pull_repo():
                 print(f"[ERROR] Please update GITHUB_TOKEN in your .env file with a valid token")
                 print(f"[ERROR] Create token at: https://github.com/settings/tokens")
             else:
-            print(f"[ERROR] Could not clone repository: {e}")
-            return None
+                print(f"[ERROR] Could not clone repository: {e}")
+                return None
             
     return REPO_PATH
 
@@ -244,25 +244,25 @@ def submit_fix_pr(fixes):
         repo = None
         if not local_repo_path:
             try:
-        g = Github(token)
-        repo = g.get_repo(repo_name)
-        
-        # Get repository files for framework detection
-        repo_files = get_all_repo_files()
-        if not repo_files:
-            print("[WARNING] Could not get repository files, using 'unknown' framework")
-            framework = "unknown"
-        else:
-            framework = detect_framework(repo_files)
-            print(f"[DEBUG] Detected framework: {framework}")
-        
-        # Get base branch
-        try:
-            base = repo.get_branch("main")
+                g = Github(token)
+                repo = g.get_repo(repo_name)
+                
+                # Get repository files for framework detection
+                repo_files = get_all_repo_files()
+                if not repo_files:
+                    print("[WARNING] Could not get repository files, using 'unknown' framework")
+                    framework = "unknown"
+                else:
+                    framework = detect_framework(repo_files)
+                    print(f"[DEBUG] Detected framework: {framework}")
+                
+                # Get base branch
+                try:
+                    base = repo.get_branch("main")
                     base_sha = base.commit.sha
                     print(f"[DEBUG] Using main branch as base: {base_sha[:10]}...")
-        except Exception as e:
-            print(f"[ERROR] Could not get main branch: {e}")
+                except Exception as e:
+                    print(f"[ERROR] Could not get main branch: {e}")
                     return None
             except Exception as api_error:
                 error_msg = str(api_error)
@@ -273,7 +273,7 @@ def submit_fix_pr(fixes):
                     print(f"[ERROR] Required permissions: 'repo' scope")
                 else:
                     print(f"[ERROR] GitHub API error: {api_error}")
-            return None
+                return None
         
         # Create new branch
         branch_name = f"ai-fix-{framework}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -352,9 +352,9 @@ def submit_fix_pr(fixes):
                 except:
                     git_repo.git.checkout('-b', branch_name)
                 
-        for i, fix in enumerate(fixes, 1):
-            try:
-                print(f"[DEBUG] Applying fix {i}/{len(fixes)}: {fix.get('path', 'unknown path')}")
+                for i, fix in enumerate(fixes, 1):
+                    try:
+                        print(f"[DEBUG] Applying fix {i}/{len(fixes)}: {fix.get('path', 'unknown path')}")
                         fix_path = os.path.join(local_repo_path_for_fixes, fix["path"])
                         os.makedirs(os.path.dirname(fix_path), exist_ok=True)
                         with open(fix_path, 'w', encoding='utf-8') as f:
@@ -366,9 +366,13 @@ def submit_fix_pr(fixes):
                         continue
                 
                 if git_repo.is_dirty():
+                    print(f"[DEBUG] Repo is dirty. Git status: {git_repo.git.status()}")
                     git_repo.index.commit(f"AI Engine: Apply {len(fixes)} automated fixes")
                     git_repo.git.push('origin', branch_name)
                     print(f"[SUCCESS] Committed and pushed {len(fixes)} fixes")
+                else:
+                    print("[WARNING] Repo is not dirty after applying fixes. Nothing to commit.")
+                    print(f"[DEBUG] Git status: {git_repo.git.status()}")
             except Exception as e:
                 print(f"[WARNING] Git operations failed: {e}, using GitHub API fallback...")
                 local_repo_path_for_fixes = None
@@ -379,38 +383,38 @@ def submit_fix_pr(fixes):
                 try:
                     print(f"[DEBUG] Applying fix {i}/{len(fixes)}: {fix.get('path', 'unknown path')}")
                 
-                # Check if file exists
-                try:
-                    existing = repo.get_contents(fix["path"], ref=branch_name)
-                    # Update existing file
-                    repo.update_file(
-                        path=fix["path"],
-                        message=fix.get("description", f"AI fix {i}"),
-                        content=fix["content"],
-                        sha=existing.sha,
-                        branch=branch_name
-                    )
-                    print(f"[SUCCESS] Updated file: {fix['path']}")
-                except Exception:
-                    # Create new file
-                    repo.create_file(
-                        path=fix["path"],
-                        message=fix.get("description", f"AI fix {i}"),
-                        content=fix["content"],
-                        branch=branch_name
-                    )
-                    print(f"[SUCCESS] Created file: {fix['path']}")
-                    
-            except Exception as e:
-                print(f"[ERROR] Failed to apply fix {i}: {e}")
-                print(f"[DEBUG] Fix details: {fix}")
-                continue
+                    # Check if file exists
+                    try:
+                        existing = repo.get_contents(fix["path"], ref=branch_name)
+                        # Update existing file
+                        repo.update_file(
+                            path=fix["path"],
+                            message=fix.get("description", f"AI fix {i}"),
+                            content=fix["content"],
+                            sha=existing.sha,
+                            branch=branch_name
+                        )
+                        print(f"[SUCCESS] Updated file: {fix['path']}")
+                    except Exception:
+                        # Create new file
+                        repo.create_file(
+                            path=fix["path"],
+                            message=fix.get("description", f"AI fix {i}"),
+                            content=fix["content"],
+                            branch=branch_name
+                        )
+                        print(f"[SUCCESS] Created file: {fix['path']}")
+                        
+                except Exception as e:
+                    print(f"[ERROR] Failed to apply fix {i}: {e}")
+                    print(f"[DEBUG] Fix details: {fix}")
+                    continue
         
         # Create pull request with test information
         # Only use GitHub API if we have a valid repo object
         if repo:
-        try:
-            pr_title = f"AI Engine ({framework}): Automated Fixes"
+            try:
+                pr_title = f"AI Engine ({framework}): Automated Fixes"
                 
                 # Check if fixes were tested
                 test_enabled = os.getenv('TEST_FIXES_BEFORE_APPLY', 'true').lower() == 'true'
@@ -426,21 +430,21 @@ def submit_fix_pr(fixes):
 - {'✅ Isolated environment testing passed' if test_enabled else '⚠️ Testing skipped'}
 
 **Changes:**\n"""
-            for i, fix in enumerate(fixes, 1):
-                pr_body += f"- {i}. {fix.get('description', 'No description')} (`{fix.get('path', 'unknown')}`)\n"
-            
-            pr = repo.create_pull(
-                title=pr_title,
-                head=branch_name,
-                base="main",
-                body=pr_body
-            )
-            
-            pr_url = pr.html_url
-            print(f"[SUCCESS] Pull Request Created: {pr_url}")
-            return pr_url
-            
-        except Exception as e:
+                for i, fix in enumerate(fixes, 1):
+                    pr_body += f"- {i}. {fix.get('description', 'No description')} (`{fix.get('path', 'unknown')}`)\n"
+                
+                pr = repo.create_pull(
+                    title=pr_title,
+                    head=branch_name,
+                    base="main",
+                    body=pr_body
+                )
+                
+                pr_url = pr.html_url
+                print(f"[SUCCESS] Pull Request Created: {pr_url}")
+                return pr_url
+                
+            except Exception as e:
                 print(f"[WARNING] Failed to create pull request via API: {e}")
                 print(f"[INFO] Branch {branch_name} was created and fixes were pushed.")
                 print(f"[INFO] You can create the PR manually at: https://github.com/{repo_name}/compare/{branch_name}")

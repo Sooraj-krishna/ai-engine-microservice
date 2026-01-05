@@ -174,6 +174,26 @@ async def analyze_data(data, repo_files, url, repo_path):
             enhanced_bugs = await comprehensive_bug_detection(url, repo_path)
             if enhanced_bugs:
                 log_issue("Enhanced Bug Detection", f"Found {len(enhanced_bugs)} UI/UX bugs.", "WARNING")
+                print(f"[ENHANCED_BUG_DETECTOR] ========================================")
+                print(f"[ENHANCED_BUG_DETECTOR] Detected {len(enhanced_bugs)} bugs:")
+                
+                # Group bugs by type for better visibility
+                bug_types = {}
+                for bug in enhanced_bugs:
+                    bug_type = bug.get("type", "ui_bug")
+                    if bug_type not in bug_types:
+                        bug_types[bug_type] = []
+                    bug_types[bug_type].append(bug)
+                
+                # Log each bug type
+                for bug_type, type_bugs in bug_types.items():
+                    print(f"[ENHANCED_BUG_DETECTOR] - {bug_type}: {len(type_bugs)} bugs")
+                    for i, bug in enumerate(type_bugs[:3], 1):  # Show first 3 of each type
+                        print(f"[ENHANCED_BUG_DETECTOR]   {i}. {bug.get('description', 'No description')[:80]}")
+                        print(f"[ENHANCED_BUG_DETECTOR]      Details: {bug.get('details', 'No details')[:100]}")
+                
+                print(f"[ENHANCED_BUG_DETECTOR] ========================================")
+                
                 for bug in enhanced_bugs:
                     issues.append({
                         "type": bug.get("type", "ui_bug"),
@@ -182,12 +202,16 @@ async def analyze_data(data, repo_files, url, repo_path):
                         "details": bug.get("details", ""),
                         "framework": framework,
                         "language": "javascript",
-                        "target_file": "bug_report.md",
+                        "target_file": bug.get("target_file") or determine_target_file_for_bug(bug, repo_path),
                         "data": bug.get("data", {}),
                         "safe_mode": True
                     })
+            else:
+                print(f"[ENHANCED_BUG_DETECTOR] No UI/UX bugs detected")
         except Exception as e:
             print(f"[WARNING] Enhanced bug detection failed: {e}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
 
     # 8.6. Lighthouse performance audit (NEW)
     if url:
@@ -580,7 +604,6 @@ def analyze_security_aspects(data, repo_files, framework):
     
     return issues
 
-# Example of how unknown issue types would be handled:
 def handle_unknown_issue_type(issue_type, data, framework):
     """
     Fallback function for completely unknown issue types.
@@ -596,3 +619,36 @@ def handle_unknown_issue_type(issue_type, data, framework):
         "data": data,
         "safe_mode": True
     }
+
+def determine_target_file_for_bug(bug, repo_path):
+    """
+    Determine the appropriate target file for a bug fix based on bug type.
+    """
+    bug_type = bug.get("type", "")
+    bug_data = bug.get("data", {})
+    
+    # If the bug data specifies a file, use it
+    if bug_data.get("file"):
+        return bug_data["file"]
+    
+    # Otherwise, determine based on type
+    if bug_type in ["accessibility", "responsive", "performance"]:
+        # These typically affect HTML/JSX files
+        # Try to find the main entry point
+        import os
+        common_files = ["index.html", "src/index.html", "public/index.html", 
+                       "app/page.tsx", "src/App.tsx", "src/App.jsx"]
+        for file in common_files:
+            full_path = os.path.join(repo_path, file) if repo_path else file
+            if os.path.exists(full_path):
+                return file
+        return "index.html"  # Default fallback
+    
+    elif bug_type in ["javascript_error", "console_error"]:
+        # JavaScript errors - target main JS file or create a fix utility
+        return "utils/ai-error-fixes.js"
+    
+    else:
+        # Unknown type - create a utility file
+        return f"utils/ai-{bug_type.replace('_', '-')}-fix.js"
+

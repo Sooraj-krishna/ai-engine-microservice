@@ -116,6 +116,24 @@ async def prepare_fixes(issues, repo_path=None):
                     bug_type = bug.get('type', 'unknown')
                     bug_description = bug.get('description', '')
                     bug_details = bug.get('details', '')
+                    target_file = bug.get('target_file')
+                    
+                    # Try to read file content for context
+                    file_context = ""
+                    if target_file and repo_path:
+                        try:
+                            full_path = os.path.join(repo_path, target_file)
+                            if os.path.exists(full_path):
+                                with open(full_path, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+                                    # Limit content size to avoid context window issues
+                                    if len(content) > 10000:
+                                        file_context = content[:10000] + "\n... (truncated)"
+                                    else:
+                                        file_context = content
+                                print(f"[GENERATOR] Read context from {target_file} ({len(file_context)} chars)")
+                        except Exception as e:
+                            print(f"[WARNING] Could not read target file {target_file}: {e}")
                     
                     # Generate fix prompt
                     fix_prompt = f"""
@@ -123,6 +141,12 @@ You are fixing a {bug_type} bug in a web application.
 
 BUG DESCRIPTION: {bug_description}
 BUG DETAILS: {bug_details}
+TARGET FILE: {target_file or 'Unknown'}
+
+CURRENT CODE:
+```
+{file_context}
+```
 
 REQUIREMENTS:
 1. Generate a complete fix for this bug
@@ -130,9 +154,9 @@ REQUIREMENTS:
 3. Return the FULL fixed file content, not just a patch
 4. Ensure the fix resolves the issue described
 5. Maintain code quality and best practices
+6. IMPORTANT: Return ONLY the code, no markdown formatting or explanation.
 
 Please provide the complete fixed code for the file that needs to be fixed.
-If you cannot determine the exact file, provide a fix that can be applied to the relevant file.
 """
                     
                     try:
@@ -140,21 +164,48 @@ If you cannot determine the exact file, provide a fix that can be applied to the
                         fixed_code = query_codegen_api(fix_prompt, language="javascript")
                         
                         if fixed_code and len(fixed_code.strip()) > 0:
-                            # Determine file path based on bug type
-                            if bug_type in ['accessibility', 'responsive', 'performance']:
-                                file_path = "src/app/page.tsx"  # Default for Next.js
-                            elif bug_type == 'javascript_error':
-                                file_path = "src/app/page.tsx"
-                            else:
-                                file_path = bug.get('target_file', 'src/app/page.tsx')
+                            # Cleaner separation of code from markdown if present
+                            if fixed_code.startswith('```') and '```' in fixed_code[3:]:
+                                # Extract code block
+                                lines = fixed_code.split('\n')
+                                if lines[0].startswith('```'):
+                                    lines = lines[1:]
+                                if lines[-1].strip() == '```':
+                                    lines = lines[:-1]
+                                fixed_code = '\n'.join(lines)
                             
+                            # Determine file path - STRICTER LOGIC
+                            file_path = target_file
+                            
+                            if not file_path:
+                                print(f"[GENERATOR] ⚠️ Skipping bug fix: No target file identified for {bug_type}")
+                                continue
+                            
+                            # SAFETY: Ensure path is relative to repo root for Git operations
+                            if repo_path and os.path.isabs(file_path) and file_path.startswith(repo_path):
+                                file_path = os.path.relpath(file_path, repo_path)
+                                print(f"[GENERATOR] Converted absolute path to relative: {file_path}")
+                            elif os.path.isabs(file_path):
+                                # Try to make it relative if it's absolute but repo_path matching failed/wasn't provided
+                                # This assumes the script runs from near the repo or paths are standard
+                                try:
+                                    if repo_path:
+                                        file_path = os.path.relpath(file_path, repo_path)
+                                    else:
+                                        # Fallback: take basename if we can't determine relative path
+                                        # This is risky but better than failing
+                                        print(f"[GENERATOR] ⚠️ Could not determine relative path for {file_path}, using basename") 
+                                        file_path = os.path.basename(file_path)
+                                except Exception as e:
+                                    print(f"[WARNING] Path processing error: {e}")
+                                
                             all_fixes.append({
                                 'path': file_path,
                                 'content': fixed_code,
                                 'description': f"Fix for {bug_type}: {bug_description[:100]}",
                                 'bug': bug
                             })
-                            print(f"[GENERATOR] ✅ Generated AI fix for {bug_type}")
+                            print(f"[GENERATOR] ✅ Generated AI fix for {bug_type} in {file_path}")
                         else:
                             print(f"[GENERATOR] ⚠️ AI returned empty fix for {bug_type}")
                     except Exception as e:
@@ -271,9 +322,19 @@ If you cannot determine the exact file, provide a fix that can be applied to the
             if tested_fixes:
                 print(f"[GENERATOR] ✅ {len(tested_fixes)} fixes passed all tests")
             if failed_tests:
-                print(f"[GENERATOR] ⚠️ {len(failed_tests)} fixes failed tests and will be skipped")
-                for failed in failed_tests:
-                    print(f"[FIX_TESTER] Skipped: {failed['fix'].get('path')} - {failed['reason']}")
+                print(f"[GENERATOR] ========================================")
+                print(f"[GENERATOR] ⚠️ {len(failed_tests)} fixes failed tests:")
+                print(f"[GENERATOR] ========================================")
+                for idx, failed in enumerate(failed_tests, 1):
+                    fix_path = failed['fix'].get('path', 'unknown')
+                    reason = failed.get('reason', 'Unknown reason')
+                    details = failed.get('details', '')
+                    print(f"[GENERATOR] {idx}. FAILED: {fix_path}")
+                    print(f"[GENERATOR]    Reason: {reason}")
+                    if details:
+                        print(f"[GENERATOR]    Details: {details[:200]}")
+                    print(f"[GENERATOR]    Fix description: {failed['fix'].get('description', 'No description')[:100]}")
+                print(f"[GENERATOR] ========================================")
             
             return tested_fixes
         except ImportError:
