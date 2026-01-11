@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-11T12:24:22.493706",
+  "language": "javascript",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Interactive element missing accessible label\nBUG DETAILS: button element (id: no-id) has no accessible label\nTARGET FILE: index.html\n\nCURRENT CODE:\n```\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Accessibility Fix</title>\n</head>\n<body>\n    <form>\n        <label for=\"no-id\">Email:</label>\n        <input type=\"emai...",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Accessibility Fix</title>\n</head>\n<body>\n    <form>\n        <label for=\"email-input\">Email",
+  "processed_code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Accessibility Fix</title>\n</head>\n<body>\n    <form>\n        <label for=\"email-input\">Email",
+  "code_length": 243,
+  "has_markdown": false
+}

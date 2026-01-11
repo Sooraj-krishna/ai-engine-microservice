@@ -1,0 +1,290 @@
+{
+  "timestamp": "2026-01-11T12:41:58.886752",
+  "total_fixes": 25,
+  "safe_fixes": 25,
+  "rejected_fixes": 0,
+  "approval_rate": 100.0,
+  "validation_results": [
+    {
+      "fix_number": 1,
+      "path": "utils/ai-memory-optimizer.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for memory_optimization: Critical memory usage (93.3%). Create memory optimization utilities.",
+      "content_preview": "/**\n * @module MemoryOptimizer\n * @description Provides utilities for monitoring and optimizing memory usage in a Node.js application.\n *              Aims to reduce critical memory usage by offering tools like memory monitoring,\n *              LRU caching, and object pooling.\n */\n\n// 1. Memory Monitoring Utility\n// -----------------------------------------------------------------------------\n\n/**\n * Retrieves the current memory usage statistics",
+      "content_length": 450,
+      "bug_type": "memory_optimization"
+    },
+    {
+      "fix_number": 2,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Found 61 HTML/JSX files. Create accessibility helper utilities.",
+      "content_preview": "import React, { useId } from 'react';\n\n// --- Utility Function: getUniqueId ---\nlet idCounter = 0;\n/**\n * Generates a unique ID string.\n * Useful for associating labels with inputs, or for ARIA attributes like aria-labelledby, aria-describedby.\n * This utility is designed for use outside of React component lifecycles or when",
+      "content_length": 326,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 3,
+      "path": "bug_report.md",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for bug_report: Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts.",
+      "content_preview": "const fs = require('fs').promises;\nconst path = require('path');\n\n// Define the path for persistent storage.\n// It's good practice to store data outside the application's code directory,\n// or in a designated data directory. For this example, we'll create a 'data'\n// directory relative to the current module.\nconst DATA_DIR = path.",
+      "content_length": 332,
+      "bug_type": "bug_report"
+    },
+    {
+      "fix_number": 4,
+      "path": "bug_report.md",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for bug_report: Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts.",
+      "content_preview": "const fs = require('fs').promises;\nconst path = require('path');\n\n// Define the path for persistent storage.\n// It's good practice to store data outside the application's code directory,\n// or in a designated data directory. For this example, we'll create a 'data'\n// directory relative to the current module, one level up",
+      "content_length": 322,
+      "bug_type": "bug_report"
+    },
+    {
+      "fix_number": 5,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 6,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 7,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 8,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 9,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 10,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 11,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 12,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Interactive element missing accessible label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Web Application</title>\n</head>\n<body>\n    <button id=\"no-id\">Click Me</button>\n</body>\n</html>",
+      "content_length": 248,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 13,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Form input missing label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Website Search</title>\n</head>\n<body>\n    <header>\n        <h1>Welcome to Our Site</h1>\n    </header>\n\n    <main>\n        <section>\n            <h2>Search Our Content</h2>\n            <form role=\"search\">\n                <label for=\"no-id\">Search this website:</label>\n                <input type=\"search\" id=\"no-id\" name=\"q\" placeholder=\"Enter your search term...\">\n                <button type=\"submit\">Search</button>\n            </form>\n        </section>\n\n        <section>\n            <h2>Main Content Area</h2>\n            <p>This is where the main content of your page would go.</p>\n            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>\n        </section>\n    </main>\n\n    <footer>\n        <p>&copy; 2023 Your Company</p>\n    </footer>\n</body>\n</html...",
+      "content_length": 1001,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 14,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Form input missing label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Website Search</title>\n</head>\n<body>\n    <header>\n        <h1>Welcome to Our Site</h1>\n    </header>\n\n    <main>\n        <section>\n            <h2>Search Our Content</h2>\n            <form role=\"search\">\n                <label for=\"no-id\">Search this website:</label>\n                <input type=\"search\" id=\"no-id\" name=\"q\" placeholder=\"Enter your search term...\">\n                <button type=\"submit\">Search</button>\n            </form>\n        </section>\n\n        <section>\n            <h2>Main Content Area</h2>\n            <p>This is where the main content of your page would go.</p>\n            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>\n        </section>\n    </main>\n\n    <footer>\n        <p>&copy; 2023 Your Company</p>\n    </footer>\n</body>\n</html...",
+      "content_length": 1001,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 15,
+      "path": "index.html",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Form input missing label",
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Accessibility Fix</title>\n</head>\n<body>\n    <form>\n        <label for=\"no-id\">Email Address:</label>\n        <input type=\"email\" id=\"no-id\" name=\"email_address\">\n    </form>\n</body>\n</html>",
+      "content_length": 343,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 16,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: button-name",
+      "content_preview": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n * To address the \"button-name",
+      "content_length": 373,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 17,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: image-redundant-alt",
+      "content_preview": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object} props",
+      "content_length": 370,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 18,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: landmark-one-main",
+      "content_preview": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object} props",
+      "content_length": 370,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 19,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: meta-viewport",
+      "content_preview": "import React from 'react';\nimport { Helmet } from 'react-helmet';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It also ensures that the viewport meta tag is correctly configured to allow",
+      "content_length": 392,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 20,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [
+        "Large JavaScript code lacks error handling"
+      ],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: page-has-heading-one",
+      "content_preview": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n * It also ensures that the page contains a level-one heading, addressing the Axe violation: \"page-has-heading-one\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object} props\n * @param {React.ReactNode} props.children - The main content of the page to be rendered within the main landmark.\n * @param {string} props.pageTitle - The main title of the page, rendered as an <h1> to ensure page-has-heading-one compliance.\n * @param {React.ReactNode} [props.headerContent] - Optional content for the header landmark (role=\"banner\").\n * @param {React.ReactNode} [props.navContent] - Optional content for the navigation landmark (role=\"navigation\").\n * @param {React.ReactNode} [props.footerCon...",
+      "content_length": 1487,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 21,
+      "path": "utils/ai-accessibility-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "Fix for accessibility: Axe violation: region",
+      "content_preview": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object",
+      "content_length": 363,
+      "bug_type": "accessibility"
+    },
+    {
+      "fix_number": 22,
+      "path": "utils/ai-engagement-booster.js",
+      "is_safe": true,
+      "warnings": [
+        "Large JavaScript code lacks error handling"
+      ],
+      "errors": [],
+      "description": "AI-Generated: Safe user engagement enhancement utility",
+      "content_preview": "/**\n * AI-Generated User Engagement Utility\n * SAFE TO USE: This only adds features, never removes existing functionality\n */\n\nclass EngagementBooster {\n    constructor(options = {}) {\n        this.config = {\n            showTips: options.showTips !== false,\n            tipDelay: options.tipDelay || 15000, // 15 seconds\n            maxTips: options.maxTips || 3,\n            respectUserPreferences: true\n        };\n        \n        this.tipsShown = 0;\n        this.isActive = true;\n        this.userInteracted = false;\n        \n        // Only initialize if not already running\n        if (!window.aiEngagementActive) {\n            this.init();\n            window.aiEngagementActive = true;\n        }\n    }\n    \n    init() {\n        // Safe initialization that doesn't interfere with existing code\n        this.trackUserInteraction();\n        \n        if (document.readyState === 'loading') {\n            document.addEventListener('DOMContentLoaded', () => this.startEngagement());\n        } else {...",
+      "content_length": 4865,
+      "bug_type": "N/A"
+    },
+    {
+      "fix_number": 23,
+      "path": "utils/ai-seo-optimizer.js",
+      "is_safe": true,
+      "warnings": [
+        "Large JavaScript code lacks error handling"
+      ],
+      "errors": [],
+      "description": "AI-Generated: SEO analysis and recommendation utility",
+      "content_preview": "/**\n * AI-Generated SEO Optimization Utility\n * Generated: 2026-01-11T12:41:58.879321\n * SAFE TO USE: Only adds SEO helpers, doesn't modify existing content\n */\n\nclass SEOOptimizer {\n    constructor() {\n        this.recommendations = [];\n        this.analyzePage();\n        \n        console.log('[AI SEO Optimizer] Initialized safely');\n    }\n    \n    analyzePage() {\n        const recommendations = [];\n        \n        // Check for missing meta description\n        const metaDesc = document.querySelector('meta[name=\"description\"]');\n        if (!metaDesc || !metaDesc.content || metaDesc.content.length < 120) {\n            recommendations.push({\n                type: 'meta-description',\n                issue: 'Missing or short meta description',\n                suggestion: 'Add a meta description of 150-160 characters'\n            });\n        }\n        \n        // Check for missing or poor title\n        if (!document.title || document.title.length < 30) {\n            recommendations.push({...",
+      "content_length": 4577,
+      "bug_type": "N/A"
+    },
+    {
+      "fix_number": 24,
+      "path": "utils/ai-dependency-security.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "AI-Generated: Dependency security scanning utility",
+      "content_preview": "/**\n * AI-Generated Dependency Security Utility\n * Generated: 2026-01-11T12:41:58.879335\n * SAFE TO USE: Only scans for security issues, doesn't modify dependencies\n */\n\nclass DependencySecurityScanner {\n    constructor() {\n        this.vulnerabilities = [];\n        this.recommendations = [];\n        this.init();\n        \n        console.log('[AI Dependency Security Scanner] Initialized safely');\n    }\n    \n    init() {\n        this.scanScripts();\n        this.scanExternalResources();\n        this.generateRecommendations();\n    }\n    \n    scanScripts() {\n        const scripts = document.querySelectorAll('script[src]');\n        const externalScripts = [];\n        \n        scripts.forEach(script => {\n            const src = script.src;\n            if (src && !src.startsWith(window.location.origin)) {\n                externalScripts.push({\n                    src: src,\n                    integrity: script.integrity || 'none',\n                    crossorigin: script.crossorigin || 'none',...",
+      "content_length": 5625,
+      "bug_type": "N/A"
+    },
+    {
+      "fix_number": 25,
+      "path": "utils/ai-security-helper.js",
+      "is_safe": true,
+      "warnings": [],
+      "errors": [],
+      "description": "AI-Generated: Basic security validation utilities",
+      "content_preview": "/**\n * AI-Generated Security Helper Utility\n * SAFE TO USE: Only adds security validations, doesn't modify existing functionality\n */\n\nclass SecurityHelper {\n    constructor() {\n        this.suspiciousPatterns = [\n            /<script[^>]*>.*?<\\/script>/gi,\n            /javascript:/gi,\n            /on\\w+\\s*=/gi,\n            /data:text\\/html/gi,\n            /vbscript:/gi\n        ];\n        \n        this.violations = [];\n        this.init();\n        \n        console.log('[AI Security Helper] Initialized safely');\n    }\n    \n    init() {\n        // Set up Content Security Policy monitoring if available\n        if ('SecurityPolicyViolationEvent' in window) {\n            document.addEventListener('securitypolicyviolation', (e) => {\n                this.logViolation({\n                    type: 'csp',\n                    violatedDirective: e.violatedDirective,\n                    blockedURI: e.blockedURI,\n                    timestamp: new Date().toISOString()\n                });\n            ...",
+      "content_length": 5015,
+      "bug_type": "N/A"
+    }
+  ]
+}

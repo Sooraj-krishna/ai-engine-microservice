@@ -322,10 +322,28 @@ class CodeValidator:
         
         print(f"[VALIDATOR] Validating {total_fixes} fixes with enhanced context-aware validation...")
         
+        # DEBUG: Save validation results
+        save_validation_debug = os.getenv('SAVE_VALIDATION_DEBUG', 'true').lower() == 'true'
+        validation_results = []
+        
         for i, fix in enumerate(fixes, 1):
             print(f"[VALIDATOR] Validating fix {i}/{total_fixes}: {fix.get('path', 'unknown')}")
             
             is_safe, warnings, errors = self.validate_fix(fix)
+            
+            # DEBUG: Save detailed validation result
+            if save_validation_debug:
+                validation_results.append({
+                    "fix_number": i,
+                    "path": fix.get('path', 'unknown'),
+                    "is_safe": is_safe,
+                    "warnings": warnings,
+                    "errors": errors,
+                    "description": fix.get('description', ''),
+                    "content_preview": fix.get('content', '')[:1000] + "..." if len(fix.get('content', '')) > 1000 else fix.get('content', ''),
+                    "content_length": len(fix.get('content', '')),
+                    "bug_type": fix.get('bug', {}).get('type', 'N/A'),
+                })
             
             if is_safe:
                 safe_fixes.append(fix)
@@ -345,6 +363,37 @@ class CodeValidator:
                 
                 if any('dangerous pattern' in error.lower() and 'remove' in error.lower() for error in errors):
                     print(f"[SUGGESTION] 💡 Element removal detected - ensure it's for user-created elements only")
+        
+        # DEBUG: Save validation results to file
+        if save_validation_debug and validation_results:
+            try:
+                from pathlib import Path
+                
+                # Use absolute path - go up from src/ to project root
+                project_root = Path(__file__).parent.parent
+                debug_folder = project_root / "data" / "validation_results"
+                debug_folder.mkdir(parents=True, exist_ok=True)
+                
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                debug_file = debug_folder / f"validation_{timestamp}.json"
+                
+                debug_data = {
+                    "timestamp": datetime.now().isoformat(),
+                    "total_fixes": total_fixes,
+                    "safe_fixes": len(safe_fixes),
+                    "rejected_fixes": total_fixes - len(safe_fixes),
+                    "approval_rate": (len(safe_fixes) / total_fixes * 100) if total_fixes > 0 else 0,
+                    "validation_results": validation_results
+                }
+                
+                with open(debug_file, 'w', encoding='utf-8') as f:
+                    json.dump(debug_data, f, indent=2)
+                
+                print(f"[DEBUG] Saved validation results to: {debug_file}")
+            except Exception as debug_error:
+                print(f"[WARNING] Failed to save validation results: {debug_error}")
+                import traceback
+                print(f"[DEBUG] Traceback: {traceback.format_exc()}")
         
         approval_rate = (len(safe_fixes) / total_fixes * 100) if total_fixes > 0 else 0
         print(f"[VALIDATOR] Enhanced validation complete: {len(safe_fixes)}/{total_fixes} fixes approved ({approval_rate:.1f}%)")

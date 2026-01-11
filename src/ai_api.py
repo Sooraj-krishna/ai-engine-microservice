@@ -82,6 +82,42 @@ def query_gemini_codegen(prompt, language="python"):
         )
         generated_code = (result.get("content") or "").strip()
         
+        # SAVE RAW GENERATED CODE FOR DEBUGGING (before any processing)
+        save_raw_generated_code = os.getenv('SAVE_RAW_GENERATED_CODE', 'true').lower() == 'true'
+        if save_raw_generated_code:
+            try:
+                import json
+                from datetime import datetime
+                from pathlib import Path
+                
+                # Use absolute path - go up from src/ to project root
+                project_root = Path(__file__).parent.parent
+                debug_folder = project_root / "data" / "raw_generated_code"
+                debug_folder.mkdir(parents=True, exist_ok=True)
+                
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                debug_file = debug_folder / f"raw_code_{timestamp}.json"
+                
+                debug_data = {
+                    "timestamp": datetime.now().isoformat(),
+                    "language": language,
+                    "prompt": prompt[:500] + "..." if len(prompt) > 500 else prompt,
+                    "model_used": result.get('model_used', 'unknown'),
+                    "raw_response": result.get("content") or "",
+                    "processed_code": generated_code,
+                    "code_length": len(generated_code),
+                    "has_markdown": "```" in (result.get("content") or "")
+                }
+                
+                with open(debug_file, 'w', encoding='utf-8') as f:
+                    json.dump(debug_data, f, indent=2)
+                
+                print(f"[DEBUG] Saved raw generated code to: {debug_file}")
+            except Exception as debug_error:
+                print(f"[WARNING] Failed to save raw generated code: {debug_error}")
+                import traceback
+                print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+        
         # Clean up common formatting issues
         if generated_code.startswith("```"):
             lines = generated_code.split("\n")

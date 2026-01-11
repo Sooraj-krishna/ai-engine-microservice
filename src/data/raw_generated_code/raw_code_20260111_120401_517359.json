@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-11T12:04:01.517380",
+  "language": "javascript",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Found 61 HTML/JSX files. Create accessibility helper utilities.\nBUG DETAILS: \nTARGET FILE: utils/ai-accessibility-helper.js\n\nCURRENT CODE:\n```\n\n```\n\nREQUIREMENTS:\n1. Generate a complete fix for this bug\n2. Fix the actual code that has the bug\n3. Return the FULL fixed file content, not just a patch\n4. Ensure the fix resolves the issue described\n5. Maintain code quality and best practices\n6. IMPORTANT: Return ONLY the code...",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "/**\n * @fileoverview A collection of utility functions to enhance web accessibility.\n */\n\n/**\n * Safely sets focus to a given HTML element.\n * Prevents errors if the element is null or not focusable.\n * @param {HTMLElement | null} element The element to focus.\n */\nexport function setFocus(element) {\n  if (element && typeof element",
+  "processed_code": "/**\n * @fileoverview A collection of utility functions to enhance web accessibility.\n */\n\n/**\n * Safely sets focus to a given HTML element.\n * Prevents errors if the element is null or not focusable.\n * @param {HTMLElement | null} element The element to focus.\n */\nexport function setFocus(element) {\n  if (element && typeof element",
+  "code_length": 332,
+  "has_markdown": false
+}

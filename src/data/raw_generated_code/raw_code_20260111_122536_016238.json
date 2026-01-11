@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-11T12:25:36.016262",
+  "language": "javascript",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Axe violation: button-name\nBUG DETAILS: Ensure buttons have discernible text. Found in 6 element(s).\nTARGET FILE: utils/ai-accessibility-helper.js\n\nCURRENT CODE:\n```\nimport React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violati...",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object} props",
+  "processed_code": "import React from 'react';\n\n/**\n * A helper component that provides a basic accessible page structure with common landmarks.\n * This component ensures that all content passed to it is contained within appropriate\n * ARIA landmarks, addressing the Axe violation: \"region\".\n *\n * It includes a header, navigation, main content area, and footer.\n *\n * @param {object} props",
+  "code_length": 370,
+  "has_markdown": false
+}

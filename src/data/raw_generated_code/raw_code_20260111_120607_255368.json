@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-11T12:06:07.255389",
+  "language": "javascript",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Axe violation: page-has-heading-one\nBUG DETAILS: Ensure that the page, or at least one of its frames contains a level-one heading. Found in 1 element(s).\nTARGET FILE: utils/ai-accessibility-helper.js\n\nCURRENT CODE:\n```\n\n```\n\nREQUIREMENTS:\n1. Generate a complete fix for this bug\n2. Fix the actual code that has the bug\n3. Return the FULL fixed file content, not just a patch\n4. Ensure the fix resolves the issue described\n5....",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "export function createAccessibleMainSection(mainHeadingText, contentHtml = '') {\n  if (!mainHeadingText || typeof mainHeadingText !== 'string' || mainHeadingText.trim() === '') {\n    console.warn(\"createAccessibleMainSection: 'mainHeadingText' is required and should be a non-empty string to ensure proper page structure and accessibility (H1 missing",
+  "processed_code": "export function createAccessibleMainSection(mainHeadingText, contentHtml = '') {\n  if (!mainHeadingText || typeof mainHeadingText !== 'string' || mainHeadingText.trim() === '') {\n    console.warn(\"createAccessibleMainSection: 'mainHeadingText' is required and should be a non-empty string to ensure proper page structure and accessibility (H1 missing",
+  "code_length": 350,
+  "has_markdown": false
+}

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-11T12:49:35.186597",
+  "language": "javascript",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Interactive element missing accessible label\nBUG DETAILS: button element (id: no-id) has no accessible label\nTARGET FILE: index.html\n\nCURRENT CODE:\n```\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Website Search</title>\n</head>\n<body>\n    <header>\n        <h1>Welcome to Our Site</h1>\n    </header>\n\n    <main>\n     ...",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Website Search</title>\n</head>\n<body>\n    <header>\n        <h1>Welcome to Our Site</h1>\n    </",
+  "processed_code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Website Search</title>\n</head>\n<body>\n    <header>\n        <h1>Welcome to Our Site</h1>\n    </",
+  "code_length": 247,
+  "has_markdown": false
+}
