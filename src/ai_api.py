@@ -1,22 +1,51 @@
 """
 AI API client for dynamic code generation.
-Uses Gemini API exclusively.
+Uses Gemini API exclusively with caching and prompt optimization.
 """
 
 import os
 from typing import Dict, Any
 
 from model_router import ask
+from ai_cache import ai_cache
+from prompt_optimizer import prompt_optimizer
 
 def query_codegen_api(prompt, language="python"):
     """
-    Query Gemini API for intelligent code generation.
+    Query Gemini API for intelligent code generation with caching.
     """
     return query_gemini_codegen(prompt, language)
 
 def _build_prompt(prompt, language):
-    """Build a consistent prompt."""
-    return f"""
+    """Build an optimized prompt using prompt optimizer."""
+    # Try to use optimized template
+    try:
+        optimized = prompt_optimizer.optimize_prompt(
+            "fix_generation",
+            bug_description=prompt,
+            line=0,
+            code="",
+            original_prompt=f"""
+You are an expert software developer. Generate clean, production-ready {language} code for the following task:
+
+TASK: {prompt}
+
+REQUIREMENTS:
+- Write clean, maintainable code
+- Include helpful comments
+- Follow best practices for {language}
+- Make the code ready to use in a real project
+- If it's a React/JavaScript component, make it functional and modern
+- If it's Python, use proper error handling
+- Return ONLY the code, no explanations or markdown
+
+CODE:
+"""
+        )
+        return optimized
+    except:
+        # Fallback to standard prompt
+        return f"""
 You are an expert software developer. Generate clean, production-ready {language} code for the following task:
 
 TASK: {prompt}
@@ -34,8 +63,15 @@ CODE:
 """
         
 def query_gemini_codegen(prompt, language="python"):
-    """Generate code using Gemini API."""
+    """Generate code using Gemini API with caching."""
     try:
+        # Check cache first
+        cache_key = f"{language}:{prompt}"
+        cached_response = ai_cache.get(cache_key, model="codegen")
+        if cached_response:
+            print(f"[AI_CACHE] Using cached code generation")
+            return cached_response
+        
         messages = [
             {"role": "system", "content": "You are a helpful AI developer that returns only code."},
             {"role": "user", "content": _build_prompt(prompt, language)},
@@ -54,6 +90,9 @@ def query_gemini_codegen(prompt, language="python"):
             if lines and lines[-1].startswith("```"):
                 lines = lines[:-1]
             generated_code = "\n".join(lines)
+        
+        # Cache the response
+        ai_cache.set(cache_key, generated_code, model="codegen")
         
         model_used = result.get('model_used', 'unknown')
         print(f"[SUCCESS] Generated {len(generated_code)} chars of {language} code using {model_used}")

@@ -229,12 +229,28 @@ def manual_rollback(background_tasks: BackgroundTasks):
 
 # Competitive Analysis Endpoints
 @app.post("/analyze-competitors")
-async def analyze_competitors(competitor_urls: list[str] = None):
+async def analyze_competitors(competitor_urls: list[str] = None, depth: str = None, premium: bool = False, ultra: bool = False, professional: bool = False):
     """
     Analyze competitor sites and generate feature recommendations.
-    If competitor_urls not provided, uses COMPETITOR_URLS from .env
+    
+    Args:
+        competitor_urls: List of competitor URLs (uses COMPETITOR_URLS from .env if not provided)
+        depth: Analysis depth - "basic", "standard", or "deep" (uses COMPETITIVE_ANALYSIS_DEPTH from .env if not provided)
+        premium: Enable comprehensive analysis (UI + SEO + accessibility + tech stack)
+        ultra: Enable ULTRA-COMPREHENSIVE mode - finds EVERY feature difference (colors, fonts, spacing, etc.)
+        professional: Enable PROFESSIONAL mode - detects business features (COD, Try & Buy, delivery options, etc.)
     """
-    print("[INFO] Competitive analysis requested")
+    # Determine analysis mode
+    if professional:
+        print(f"[INFO] 🎯 PROFESSIONAL mode - Business features (COD, Payment, Delivery, etc.)")
+    elif premium:
+        print(f"[INFO] ✨ COMPREHENSIVE mode - UI + SEO + Accessibility + Tech Stack")
+    else:
+        # Default: Standard is now comprehensive (premium=true for old analyzer)
+        premium = True
+        print(f"[INFO] 📊 STANDARD mode - Running comprehensive analysis (UI + SEO + Accessibility)")
+    
+    print(f"[INFO] Competitive analysis requested (premium: {premium}, ultra: {ultra}, professional: {professional})")
     
     # Get competitor URLs from request or environment
     if not competitor_urls:
@@ -247,11 +263,29 @@ async def analyze_competitors(competitor_urls: list[str] = None):
             content={"error": "No competitor URLs provided. Add COMPETITOR_URLS to .env or pass URLs in request body"}
         )
     
+    # Get depth from request or environment
+    if not depth:
+        depth = os.getenv("COMPETITIVE_ANALYSIS_DEPTH", "standard")
+    
+    # Validate depth
+    if depth not in ["basic", "standard", "deep"]:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Invalid depth '{depth}'. Must be 'basic', 'standard', or 'deep'"}
+        )
+    
     # Check if enabled
     if not os.getenv("ENABLE_COMPETITIVE_ANALYSIS", "true").lower() == "true":
         return JSONResponse(
             status_code=403,
             content={"error": "Competitive analysis is disabled. Set ENABLE_COMPETITIVE_ANALYSIS=true in .env"}
+        )
+    
+    # Check if premium is enabled
+    if premium and not os.getenv("ENABLE_PREMIUM_ANALYSIS", "true").lower() == "true":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Premium analysis is disabled. Set ENABLE_PREMIUM_ANALYSIS=true in .env"}
         )
     
     own_site_url = os.getenv("WEBSITE_URL")
@@ -262,13 +296,133 @@ async def analyze_competitors(competitor_urls: list[str] = None):
         )
     
     try:
-        from competitive_analyzer import CompetitiveAnalyzer
-        analyzer = CompetitiveAnalyzer()
+        # Declare global at the start
+        global competitive_analysis_results
         
-        analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls)
+        # PROFESSIONAL MODE - Business Features (COD, Try & Buy, etc.)
+        if professional:
+            print(f"[INFO] 🎯 PROFESSIONAL MODE ENABLED")
+            print(f"[INFO] Detecting business features: COD, Try & Buy, delivery options, payment methods...")
+            
+            from professional_competitive_analyzer import professional_analyzer
+            analysis = await professional_analyzer.analyze_competitors_professional(own_site_url, competitor_urls)
+            
+            # Convert professional analysis format to match frontend expectations
+            # UI expects: id, name, category, description, found_in, frequency, frequency_percentage,
+            #             complexity, priority_score, estimated_effort, business_impact, implementation_notes
+            
+            feature_gaps_for_ui = []
+            for idx, gap in enumerate(analysis.get("all_gaps", []), 1):
+                # Generate UI-compatible format
+                competitor_count = gap.get("competitor_count", 0)
+                total_competitors = len(competitor_urls)
+                frequency_percentage = f"{int((competitor_count / total_competitors) * 100)}%" if total_competitors > 0 else "0%"
+                
+                # Map priority_score (0-100) to priority_score (0-10) for UI
+                priority_score_100 = gap.get("priority_score", 50)
+                priority_score_10 = int(priority_score_100 / 10)
+                
+                # Determine complexity and effort
+                complexity = "medium"  # Default
+                estimated_effort = "Medium"
+                if priority_score_100 >= 85:
+                    estimated_effort = "High"
+                    complexity = "high"
+                elif priority_score_100 <= 60:
+                    estimated_effort = "Low"
+                    complexity = "low"
+                
+                # Determine business impact
+                business_impact = "high" if priority_score_100 >= 80 else "medium" if priority_score_100 >= 60 else "low"
+                
+                # Generate description
+                description = f"{gap.get('category', 'Feature')} feature found in {competitor_count} out of {total_competitors} competitors"
+                
+                # Implementation notes
+                evidence_summary = ". ".join(gap.get("evidence", [])[:2])
+                implementation_notes = f"Competitors: {', '.join([url.split('//')[1].split('/')[0] for url in gap.get('competitors_with', [])])}. Evidence: {evidence_summary[:150]}"
+                
+                feature_gaps_for_ui.append({
+                    "id": f"gap_{idx}",
+                    "name": gap.get("feature_name", "Unknown Feature"),
+                    "category": gap.get("category", "General"),
+                    "description": description,
+                    "found_in": [url.split("//")[1].split("/")[0] for url in gap.get("competitors_with", [])],
+                    "frequency": f"{competitor_count}/{total_competitors}",
+                    "frequency_percentage": frequency_percentage,
+                    "complexity": complexity,
+                    "priority_score": priority_score_10,
+                    "estimated_effort": estimated_effort,
+                    "business_impact": business_impact,
+                    "implementation_notes": implementation_notes
+                })
+            
+            # Store analysis globally for /feature-recommendations endpoint
+            competitive_analysis_results = {
+                "analysis_date": analysis["analyzed_at"],
+                "feature_gaps": feature_gaps_for_ui,
+                "summary": {
+                    "total_competitors": len(competitor_urls),
+                    "total_gaps": analysis["total_gaps"],
+                    "high_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] >= 7]),
+                    "medium_priority": len([g for g in feature_gaps_for_ui if 4 <= g["priority_score"] < 7]),
+                    "low_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] < 4])
+                },
+                "analysis_type": "professional"
+            }
+            
+            return JSONResponse(content={
+                "status": "success",
+                "analysis_type": "professional",
+                "total_gaps": analysis["total_gaps"],
+                "high_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] >= 7]),
+                "gaps_by_category": analysis["gaps_by_category"],
+                "high_priority_gaps": [g for g in feature_gaps_for_ui if g["priority_score"] >= 7],
+                "feature_gaps": feature_gaps_for_ui,  # Include for UI
+                "recommendations": analysis["recommendations"],
+                "summary": competitive_analysis_results["summary"],
+                "message": f"✅ Found {analysis['total_gaps']} business feature gaps using PROFESSIONAL analysis"
+            })
+        
+        # ULTRA-COMPREHENSIVE MODE - Finds EVERY difference
+        if ultra:
+            print(f"[INFO] 🚀 ULTRA-COMPREHENSIVE MODE ENABLED")
+            print(f"[INFO] This will detect EVERY feature difference including colors, fonts, spacing, etc.")
+            
+            from ultra_comprehensive_analyzer import ultra_analyzer
+            analysis = await ultra_analyzer.analyze_ultra_comprehensive(own_site_url, competitor_urls)
+            
+            # Store analysis globally for /feature-recommendations endpoint
+            # Convert ultra-comprehensive format to match frontend expectations
+            competitive_analysis_results = {
+                "analysis_date": datetime.now().isoformat(),
+                "feature_gaps": analysis["feature_gaps"],
+                "summary": {
+                    "total_competitors": len(competitor_urls),
+                    "total_gaps": analysis["total_gaps_found"],
+                    "high_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") in ["critical", "high"]]),
+                    "medium_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") == "medium"]),
+                    "low_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") == "low"])
+                },
+                "analysis_type": "ultra_comprehensive"
+            }
+            
+            return JSONResponse(content={
+                "status": "success",
+                "analysis_type": "ultra_comprehensive",
+                "total_features_found": analysis["total_gaps_found"],
+                "recommendations": analysis["feature_gaps"],
+                "message": f"✅ Found {analysis['total_gaps_found']} feature gaps using ULTRA-COMPREHENSIVE analysis"
+            })
+        
+        # Standard analysis
+        from competitive_analyzer import CompetitiveAnalyzer
+        analyzer = CompetitiveAnalyzer(depth=depth)
+        
+        print(f"[INFO] Starting competitive analysis with depth: {depth}, premium: {premium}")
+        analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls, premium=premium)
         
         # Store analysis globally for /feature-recommendations endpoint
-        global competitive_analysis_results
         competitive_analysis_results = analysis
         
         return JSONResponse(content=analysis)
@@ -298,12 +452,19 @@ async def get_feature_recommendations():
     })
 
 @app.post("/select-feature")
-async def select_feature_to_implement(feature_id: str):
+async def select_feature_to_implement(request: dict):
     """
     User selects which feature to implement next.
     For MVP: Just logs the selection (no actual implementation).
     """
     global competitive_analysis_results
+    
+    feature_id = request.get("feature_id")
+    if not feature_id:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "feature_id is required in request body"}
+        )
     
     if not competitive_analysis_results:
         return JSONResponse(

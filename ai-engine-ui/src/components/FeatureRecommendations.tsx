@@ -35,7 +35,9 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingPremium, setAnalyzingPremium] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     fetchRecommendations();
@@ -62,11 +64,17 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
     }
   };
 
-  const triggerAnalysis = async () => {
-    setAnalyzing(true);
+  const triggerAnalysis = async (isProfessional: boolean = false) => {
+    if (isProfessional) {
+      setAnalyzingPremium(true);
+    } else {
+      setAnalyzing(true);
+    }
     setError(null);
     try {
-      const response = await fetch('http://localhost:8000/analyze-competitors', {
+      // Use 'professional' parameter for business features, 'premium' for comprehensive UI analysis
+      const urlParam = isProfessional ? 'professional=true' : 'premium=false';
+      const response = await fetch(`http://localhost:8000/analyze-competitors?${urlParam}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -74,11 +82,14 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
       if (response.ok) {
         // Analysis complete, fetch recommendations
         await fetchRecommendations();
+        setIsPremium(isProfessional);
         
         // Use setTimeout to ensure state updates complete before showing alert
         setTimeout(() => {
           const hasFeatures = features.length > 0;
-          if (hasFeatures) {
+          if (isProfessional) {
+            alert('✨ Professional analysis completed! Business feature insights loaded.');
+          } else if (hasFeatures) {
             alert('✅ Competitive analysis completed! Feature recommendations loaded.');
           } else {
             alert('✅ Analysis completed! No missing features found - your site is competitive!');
@@ -95,6 +106,7 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
       alert('❌ Network error. Please try again.');
     } finally {
       setAnalyzing(false);
+      setAnalyzingPremium(false);
     }
   };
 
@@ -176,15 +188,32 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
             <p className="text-sm text-gray-600">
               Analyze competitor websites to discover missing features and improvement opportunities.
             </p>
-            <Button
-              onClick={triggerAnalysis}
-              disabled={analyzing}
-              className="w-full"
-            >
-              {analyzing ? '🔄 Analyzing Competitors...' : '🚀 Run Competitive Analysis'}
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={() => triggerAnalysis(false)}
+                disabled={analyzing || analyzingPremium}
+                className="w-full"
+              >
+                {analyzing ? '🔄 Analyzing Competitors...' : '🚀 Run Standard Analysis'}
+              </Button>
+              
+              <Button
+                onClick={() => triggerAnalysis(true)}
+                disabled={analyzing || analyzingPremium}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                {analyzingPremium ? '✨ Running Professional Analysis...' : '✨ Run Professional Analysis'}
+              </Button>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+              <p className="text-xs font-semibold text-blue-900 mb-1">ℹ️ Analysis Types:</p>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li><strong>Standard:</strong> UI elements + SEO + Accessibility + Tech Stack detection</li>
+                <li><strong>Professional:</strong> Business features (Payment methods, Delivery options, Reviews, COD, Try & Buy, Loyalty programs)</li>
+              </ul>
+            </div>
             <p className="text-xs text-gray-500">
-              Note: Analysis may take 30-60 seconds. Make sure COMPETITOR_URLS is configured in .env
+              Note: Analysis takes 30-60 seconds. Make sure COMPETITOR_URLS is configured in .env
             </p>
           </div>
         </CardContent>
