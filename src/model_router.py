@@ -115,7 +115,7 @@ def _query_gemini_api(
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.1,
                     top_p=0.8,
-                    max_output_tokens=2048,
+                    max_output_tokens=8192,  # Increased from 2048 to allow complete code responses
                 )
             )
             

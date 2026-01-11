@@ -153,8 +153,10 @@ REQUIREMENTS:
 2. Fix the actual code that has the bug
 3. Return the FULL fixed file content, not just a patch
 4. Ensure the fix resolves the issue described
-5. Maintain code quality and best practices
-6. IMPORTANT: Return ONLY the code, no markdown formatting or explanation.
+5. Follow best practices
+6. MINIMAL COMMENTS - only brief one-liners where necessary
+7. NO long explanatory comments
+8. IMPORTANT: Return ONLY the code, no markdown formatting or explanation.
 
 Please provide the complete fixed code for the file that needs to be fixed.
 """

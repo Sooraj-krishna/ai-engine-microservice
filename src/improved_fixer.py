@@ -136,6 +136,8 @@ REQUIREMENTS:
 5. Return ONLY the fixed code section, not the entire file
 6. Keep the same code structure and formatting
 7. Ensure compatibility with related files and dependencies
+8. MINIMAL COMMENTS - only brief one-liners where absolutely necessary
+9. NO long explanatory comments or documentation blocks
 
 FIXED CODE:
 """

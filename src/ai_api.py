@@ -31,12 +31,11 @@ You are an expert software developer. Generate clean, production-ready {language
 TASK: {prompt}
 
 REQUIREMENTS:
-- Write clean, maintainable code
-- Include helpful comments
+- Write clean, concise code
+- MINIMAL COMMENTS ONLY - brief one-liners where absolutely necessary
+- NO long explanatory comments or documentation blocks
 - Follow best practices for {language}
-- Make the code ready to use in a real project
-- If it's a React/JavaScript component, make it functional and modern
-- If it's Python, use proper error handling
+- Make the code ready to use
 - Return ONLY the code, no explanations or markdown
 
 CODE:
@@ -51,12 +50,11 @@ You are an expert software developer. Generate clean, production-ready {language
 TASK: {prompt}
 
 REQUIREMENTS:
-- Write clean, maintainable code
-- Include helpful comments
+- Write clean, concise code
+- MINIMAL COMMENTS ONLY - brief one-liners where absolutely necessary
+- NO long explanatory comments or documentation blocks
 - Follow best practices for {language}
-- Make the code ready to use in a real project
-- If it's a React/JavaScript component, make it functional and modern
-- If it's Python, use proper error handling
+- Make the code ready to use
 - Return ONLY the code, no explanations or markdown
 
 CODE:
