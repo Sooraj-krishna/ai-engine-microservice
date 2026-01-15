@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-12T19:55:08.423117",
+  "language": "html",
+  "prompt": "\nYou are fixing a accessibility bug in a web application.\n\nBUG DESCRIPTION: Axe violation: meta-viewport\nBUG DETAILS: Ensure <meta name=\"viewport\"> does not disable text scaling and zooming. Found in 1 element(s).\n\nCODEBASE CONTEXT:\n- File type: html\n- Imports: \n- Functions in file: \n- Related files: \n- Dependencies: \n\nCURRENT CODE (only the relevant section):\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, ini...",
+  "model_used": "gemini:gemini-2.5-flash",
+  "raw_response": "```html\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n```",
+  "processed_code": "```html\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n```",
+  "code_length": 88,
+  "has_markdown": true
+}

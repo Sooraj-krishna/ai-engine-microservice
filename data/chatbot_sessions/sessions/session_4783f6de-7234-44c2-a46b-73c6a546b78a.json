@@ -1,0 +1,41 @@
+{
+  "session_id": "4783f6de-7234-44c2-a46b-73c6a546b78a",
+  "user_id": "default",
+  "created_at": "2026-01-14T20:47:09.153068",
+  "updated_at": "2026-01-14T20:51:15.074657",
+  "conversation_history": [
+    {
+      "role": "assistant",
+      "content": "\ud83d\udc4b Hi! I'm your AI assistant for website maintenance and development.\n\nI can help you with:\n- \ud83d\udd27 Fixing bugs and issues\n- \u2728 Adding new features\n- \ud83c\udfa8 Modifying UI and styling\n- \ud83d\udcca Analyzing competitors\n- \ud83d\udcc8 Tracking implementation progress\n\nJust tell me what you'd like to do, and I'll create a detailed plan for your approval!\n\n**Example requests:**\n- \"Add dark mode to my website\"\n- \"Fix accessibility issues\"\n- \"Make the header blue and bigger\"\n- \"Analyze my competitors and suggest features\"\n\nWhat would you like to work on today?",
+      "timestamp": "2026-01-14T20:47:09.153752",
+      "metadata": {
+        "message_type": "welcome"
+      }
+    },
+    {
+      "role": "user",
+      "content": "Add dark mode",
+      "timestamp": "2026-01-14T20:51:10.907668",
+      "metadata": {}
+    },
+    {
+      "role": "assistant",
+      "content": "I'm your AI assistant for website maintenance. I can help you fix bugs, add features, modify UI, and analyze competitors. What would you like to do?",
+      "timestamp": "2026-01-14T20:51:15.074642",
+      "metadata": {
+        "message_type": "response",
+        "intent": "general_question",
+        "has_plan": false
+      }
+    }
+  ],
+  "context": {
+    "current_intent": "general_question",
+    "pending_changes": [],
+    "related_features": []
+  },
+  "metadata": {
+    "message_count": 3,
+    "last_intent": "general_question"
+  }
+}

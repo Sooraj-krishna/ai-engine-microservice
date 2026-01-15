@@ -6,8 +6,9 @@ import { LogsDisplay } from '@/components/LogsDisplay';
 import { StatusMonitor } from '@/components/StatusMonitor';
 import { Header } from '@/components/Header';
 import { IdentifiedBugs } from '@/components/IdentifiedBugs';
-import { LogReport } from '@/components/LogReport';
 import FeatureRecommendations from '@/components/FeatureRecommendations';
+import FeatureImplementationStatus from '@/components/FeatureImplementationStatus';
+import { ChatWidget } from '@/components/ChatWidget';
 
 export default function Home() {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -44,14 +45,14 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Configuration Panel */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <div className="glass-card rounded-xl p-6 smooth-transition hover:shadow-2xl">
+            <h2 className="text-2xl font-bold text-gradient mb-4">
               AI Engine Configuration
             </h2>
             <ConfigurationForm 
@@ -61,8 +62,8 @@ export default function Home() {
           </div>
 
           {/* Status Monitor */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <div className="glass-card rounded-xl p-6 smooth-transition hover:shadow-2xl">
+            <h2 className="text-2xl font-bold text-gradient mb-4">
               System Status
             </h2>
             <StatusMonitor status={systemStatus} />
@@ -70,28 +71,25 @@ export default function Home() {
         </div>
 
         {/* Identified Bugs */}
-        <div className="mt-8">
-          <IdentifiedBugs issues={systemStatus?.issues || []} />
-        </div>
+        <IdentifiedBugs issues={systemStatus?.issues || []} />
 
-        {/* Simple Log Report for non-technical users */}
-        <div className="mt-8">
-          <LogReport logs={logs} />
-        </div>
+        {/* Feature Implementation Status */}
+        <FeatureImplementationStatus />
 
         {/* Feature Recommendations - Competitive Analysis */}
-        <div className="mt-8">
-          <FeatureRecommendations />
-        </div>
+        <FeatureRecommendations />
 
         {/* Logs Display */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        <div className="glass-card rounded-xl p-6 smooth-transition hover:shadow-2xl">
+          <h2 className="text-2xl font-bold text-gradient mb-4">
             Real-time Logs
           </h2>
           <LogsDisplay logs={logs} />
         </div>
       </main>
+
+      {/* AI Chatbot Widget */}
+      <ChatWidget />
     </div>
   );
 }

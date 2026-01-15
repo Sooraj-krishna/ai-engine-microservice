@@ -1,0 +1,112 @@
+[
+  {
+    "id": "gap_1",
+    "feature_name": "Cash on Delivery",
+    "category": "Payment",
+    "priority_score": 9,
+    "estimated_effort": "High",
+    "business_impact": "high",
+    "selected_at": "2026-01-12T20:07:34.908033",
+    "status": "selected",
+    "implementation_status": "cancelled",
+    "full_feature_data": {
+      "id": "gap_1",
+      "name": "Cash on Delivery",
+      "category": "Payment",
+      "description": "Payment feature found in 2 out of 3 competitors",
+      "found_in": [
+        "www.flipkart.com",
+        "www.amazon.in"
+      ],
+      "frequency": "2/3",
+      "frequency_percentage": "66%",
+      "complexity": "high",
+      "priority_score": 9,
+      "estimated_effort": "High",
+      "business_impact": "high",
+      "implementation_notes": "Competitors: www.flipkart.com, www.amazon.in. Evidence: ce the best of online shopping with features like Cash on Delivery (COD), No Cost EMI, Easy Returns, and Free Shippi. oths, Accessories, Home furnishi"
+    },
+    "status_updated_at": "2026-01-12T20:21:41.790423",
+    "status_history": [
+      {
+        "status": "in_progress",
+        "notes": "Starting implementation - demo run",
+        "timestamp": "2026-01-12T20:08:35.261290"
+      },
+      {
+        "status": "cancelled",
+        "notes": "Updated via UI",
+        "timestamp": "2026-01-12T20:21:41.790438"
+      }
+    ]
+  },
+  {
+    "id": "gap_2",
+    "feature_name": "Ratings & Reviews",
+    "category": "Trust",
+    "priority_score": 9,
+    "estimated_effort": "High",
+    "business_impact": "high",
+    "selected_at": "2026-01-12T20:37:38.452308",
+    "status": "selected",
+    "implementation_status": "cancelled",
+    "full_feature_data": {
+      "id": "gap_2",
+      "name": "Ratings & Reviews",
+      "category": "Trust",
+      "description": "Trust feature found in 2 out of 3 competitors",
+      "found_in": [
+        "www.amazon.in",
+        "www.flipkart.com"
+      ],
+      "frequency": "2/3",
+      "frequency_percentage": "66%",
+      "complexity": "high",
+      "priority_score": 9,
+      "estimated_effort": "High",
+      "business_impact": "high",
+      "implementation_notes": "Competitors: www.amazon.in, www.flipkart.com. Evidence: ),f.DEBUG)throw t||n}function E(){return Math.abs(4294967295*Math.random()|0).toString(36)}function S(n,t){retu. ),a=x(y.sX-N.sX),i=x(y.sY-N.sY),r=t[f"
+    },
+    "status_updated_at": "2026-01-12T20:41:06.634384",
+    "status_history": [
+      {
+        "status": "in_progress",
+        "notes": "Updated via UI",
+        "timestamp": "2026-01-12T20:41:05.521961"
+      },
+      {
+        "status": "cancelled",
+        "notes": "Updated via UI",
+        "timestamp": "2026-01-12T20:41:06.634402"
+      }
+    ]
+  },
+  {
+    "id": "gap_3",
+    "feature_name": "Free Shipping",
+    "category": "Delivery",
+    "priority_score": 9,
+    "estimated_effort": "High",
+    "business_impact": "high",
+    "selected_at": "2026-01-13T11:49:48.780590",
+    "status": "selected",
+    "implementation_status": "pending",
+    "full_feature_data": {
+      "id": "gap_3",
+      "name": "Free Shipping",
+      "category": "Delivery",
+      "description": "Delivery feature found in 2 out of 3 competitors",
+      "found_in": [
+        "www.flipkart.com",
+        "www.amazon.in"
+      ],
+      "frequency": "2/3",
+      "frequency_percentage": "66%",
+      "complexity": "high",
+      "priority_score": 9,
+      "estimated_effort": "High",
+      "business_impact": "high",
+      "implementation_notes": "Competitors: www.flipkart.com, www.amazon.in. Evidence: ssories, Home furnishing and much more. CoD &amp; Free Shipping. Also try Our APP for seamless Online Shopping ex. on Delivery (COD), No Cost EMI, Eas"
+    }
+  }
+]

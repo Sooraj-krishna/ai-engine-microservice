@@ -42,8 +42,12 @@ from configure_endpoint import router as config_router
 from log_streamer import log_streamer, QueueLogStream
 from log_summary import log_summarizer
 from model_router import _query_gemini_api
+from feature_implementation_manager import feature_implementation_manager
+from chatbot_manager import chatbot_manager
+from chatbot_executor import chatbot_executor
+from chat_storage import chat_storage
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 import contextlib
 import sys
 
@@ -455,11 +459,17 @@ async def get_feature_recommendations():
 async def select_feature_to_implement(request: dict):
     """
     User selects which feature to implement next.
-    For MVP: Just logs the selection (no actual implementation).
+    Creates selection record, generates implementation plan, and tracks status.
+    
+    Request body:
+        - feature_id: ID of the feature to select
+        - generate_plan: (optional, default=True) Whether to generate implementation plan
     """
     global competitive_analysis_results
     
     feature_id = request.get("feature_id")
+    generate_plan = request.get("generate_plan", True)
+    
     if not feature_id:
         return JSONResponse(
             status_code=400,
@@ -482,21 +492,166 @@ async def select_feature_to_implement(request: dict):
             content={"error": f"Feature {feature_id} not found"}
         )
     
-    # For MVP: Just log the selection
-    print(f"[COMPETITIVE_ANALYSIS] User selected feature for implementation:")
-    print(f"[COMPETITIVE_ANALYSIS] - ID: {feature_id}")
-    print(f"[COMPETITIVE_ANALYSIS] - Name: {selected_feature.get('name')}")
-    print(f"[COMPETITIVE_ANALYSIS] - Priority Score: {selected_feature.get('priority_score')}")
-    print(f"[COMPETITIVE_ANALYSIS] - Estimated Effort: {selected_feature.get('estimated_effort')}")
-    
-    return JSONResponse(content={
-        "message": f"Feature '{selected_feature.get('name')}' selected for future implementation",
-        "feature": selected_feature,
-        "note": "Feature selection logged. Implementation planning will be added in future updates."
-    })
+    # Use feature implementation manager to handle selection
+    try:
+        result = feature_implementation_manager.select_feature_for_implementation(
+            feature=selected_feature,
+            analysis_results=competitive_analysis_results,
+            generate_plan=generate_plan
+        )
+        
+        print(f"[FEATURE_IMPL] Feature selected: {selected_feature.get('name')}")
+        print(f"[FEATURE_IMPL] Status: {result['status']}")
+        if result.get("implementation_plan"):
+            print(f"[FEATURE_IMPL] Implementation plan generated with {len(result['implementation_plan'].get('implementation_steps', []))} steps")
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to select feature: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to select feature: {str(e)}"}
+        )
 
 # Global variable to store competitive analysis results
 competitive_analysis_results = None
+
+# Additional Feature Implementation Endpoints
+
+@app.get("/selected-features")
+async def get_selected_features(status: str = None):
+    """
+    Get all features selected for implementation.
+    
+    Query params:
+        - status: Filter by status (pending/in_progress/completed/cancelled)
+    """
+    try:
+        features = feature_implementation_manager.get_selected_features(status_filter=status)
+        return JSONResponse(content={
+            "total": len(features),
+            "features": features,
+            "filtered_by": status if status else "all"
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get selected features: {str(e)}"}
+        )
+
+@app.put("/feature-status/{feature_id}")
+async def update_feature_status(feature_id: str, request: dict):
+    """
+    Update the implementation status of a feature.
+    
+    Request body:
+        - status: New status (pending/in_progress/completed/cancelled)
+        - notes: (optional) Notes about the status change
+    """
+    new_status = request.get("status")
+    notes = request.get("notes", "")
+    
+    if not new_status:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "status is required in request body"}
+        )
+    
+    try:
+        updated_feature = feature_implementation_manager.update_feature_status(
+            feature_id, new_status, notes
+        )
+        return JSONResponse(content={
+            "message": f"Feature status updated to '{new_status}'",
+            "feature": updated_feature
+        })
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to update feature status: {str(e)}"}
+        )
+
+@app.get("/implementation-plan/{feature_id}")
+async def get_implementation_plan(feature_id: str):
+    """
+    Get the implementation plan for a specific feature.
+    """
+    try:
+        plan = feature_implementation_manager.get_implementation_plan(feature_id)
+        
+        if not plan:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"No implementation plan found for feature {feature_id}"}
+            )
+        
+        return JSONResponse(content=plan)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get implementation plan: {str(e)}"}
+        )
+
+@app.get("/implementation-summary")
+async def get_implementation_summary():
+    """
+    Get a summary of all feature implementations.
+    """
+    try:
+        summary = feature_implementation_manager.get_implementation_summary()
+        return JSONResponse(content=summary)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get implementation summary: {str(e)}"}
+        )
+
+@app.post("/generate-implementation-plan/{feature_id}")
+async def generate_plan_for_feature(feature_id: str):
+    """
+    Generate or regenerate an implementation plan for a selected feature.
+    """
+    global competitive_analysis_results
+    
+    if not competitive_analysis_results:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "No competitive analysis results available"}
+        )
+    
+    # Find the feature
+    feature_gaps = competitive_analysis_results.get("feature_gaps", [])
+    feature = next((f for f in feature_gaps if f.get("id") == feature_id), None)
+    
+    if not feature:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Feature {feature_id} not found"}
+        )
+    
+    try:
+        plan = feature_implementation_manager.generate_implementation_plan(
+            feature, competitive_analysis_results
+        )
+        
+        if not plan:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to generate implementation plan"}
+            )
+        
+        return JSONResponse(content={
+            "message": "Implementation plan generated successfully",
+            "plan": plan
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to generate plan: {str(e)}"}
+        )
 
 
 def perform_manual_rollback():
@@ -651,6 +806,251 @@ def start_enhanced_maintenance_cycle():
                         print(f"[EMERGENCY] Emergency rollback created: {emergency_rollback}")
                 except Exception as rollback_error:
                     print(f"[EMERGENCY] Emergency rollback also failed: {rollback_error}")
+
+# ============================================================================
+# CHATBOT API ENDPOINTS
+# ============================================================================
+
+class ChatMessageRequest(BaseModel):
+    session_id: str
+    message: str
+
+class CreateSessionRequest(BaseModel):
+    user_id: Optional[str] = "default"
+
+class ApplyChangeRequest(BaseModel):
+    change_id: str
+    session_id: str
+
+class RejectChangeRequest(BaseModel):
+    change_id: str
+    session_id: str
+    reason: Optional[str] = None
+
+@app.post("/chat/session/new")
+async def create_chat_session(request: CreateSessionRequest = None):
+    """Create a new chat session."""
+    try:
+        user_id = "default"
+        if request:
+            user_id = request.user_id
+        
+        session = chatbot_manager.create_session(user_id)
+        
+        return JSONResponse(content={
+            "success": True,
+            "session": session,
+            "message": "Chat session created successfully"
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error creating session: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to create session: {str(e)}"}
+        )
+
+@app.get("/chat/sessions")
+async def get_chat_sessions(user_id: Optional[str] = None):
+    """Get all chat sessions, optionally filtered by user_id."""
+    try:
+        sessions = chatbot_manager.get_all_sessions(user_id)
+        
+        return JSONResponse(content={
+            "success": True,
+            "sessions": sessions,
+            "total": len(sessions)
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error getting sessions: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get sessions: {str(e)}"}
+        )
+
+@app.get("/chat/session/{session_id}")
+async def get_chat_session(session_id: str):
+    """Get a specific chat session by ID."""
+    try:
+        session = chatbot_manager.get_session(session_id)
+        
+        if not session:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        return JSONResponse(content={
+            "success": True,
+            "session": session
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error getting session: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get session: {str(e)}"}
+        )
+
+@app.delete("/chat/session/{session_id}")
+async def delete_chat_session(session_id: str):
+    """Delete a chat session."""
+    try:
+        result = chatbot_manager.delete_session(session_id)
+        
+        if not result:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Session deleted successfully"
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error deleting session: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to delete session: {str(e)}"}
+        )
+
+@app.post("/chat/message")
+async def send_chat_message(request: ChatMessageRequest):
+    """Send a message to the chatbot and get response."""
+    try:
+        print(f"[CHAT_API] Processing message in session {request.session_id}")
+        
+        response = await chatbot_manager.process_message(
+            request.session_id,
+            request.message
+        )
+        
+        return JSONResponse(content={
+            "success": True,
+            **response
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error processing message: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to process message: {str(e)}"}
+        )
+
+@app.get("/chat/pending-changes/{session_id}")
+async def get_pending_changes(session_id: str):
+    """Get all pending changes for a session."""
+    try:
+        pending_changes = chat_storage.get_session_pending_changes(session_id)
+        
+        return JSONResponse(content={
+            "success": True,
+            "pending_changes": pending_changes,
+            "total": len(pending_changes)
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error getting pending changes: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get pending changes: {str(e)}"}
+        )
+
+@app.post("/chat/apply-change")
+async def apply_pending_change(request: ApplyChangeRequest):
+    """Apply a pending change after user approval."""
+    try:
+        # Get the change data
+        change_data = chat_storage.get_pending_change(request.change_id)
+        
+        if not change_data:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Change not found"}
+            )
+        
+        if change_data["status"] != "pending":
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Change is already {change_data['status']}"}
+            )
+        
+        print(f"[CHAT_API] Applying change {request.change_id}...")
+        
+        # Execute the change
+        result = await chatbot_executor.execute_change(change_data)
+        
+        # Update change status
+        chat_storage.update_change_status(
+            request.change_id,
+            "applied" if result.get("success") else "failed",
+            result.get("message", "")
+        )
+        
+        # Add result message to chat
+        result_message = result.get("message", "Change applied successfully!")
+        chat_storage.add_message(
+            request.session_id,
+            "assistant",
+            f"✅ {result_message}",
+            {"message_type": "execution_result", "result": result}
+        )
+        
+        return JSONResponse(content={
+            "success": True,
+            "result": result,
+            "message": result_message
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error applying change: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to apply change: {str(e)}"}
+        )
+
+@app.post("/chat/reject-change")
+async def reject_pending_change(request: RejectChangeRequest):
+    """Reject a pending change."""
+    try:
+        # Get the change data
+        change_data = chat_storage.get_pending_change(request.change_id)
+        
+        if not change_data:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Change not found"}
+            )
+        
+        # Update change status
+        chat_storage.update_change_status(
+            request.change_id,
+            "rejected",
+            request.reason or "Rejected by user"
+        )
+        
+        # Add message to chat
+        chat_storage.add_message(
+            request.session_id,
+            "assistant",
+            "❌ Change rejected. Let me know if you'd like to try a different approach!",
+            {"message_type": "change_rejected"}
+        )
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Change rejected successfully"
+        })
+    except Exception as e:
+        print(f"[CHAT_API] Error rejecting change: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to reject change: {str(e)}"}
+        )
+
+# ============================================================================
+# END CHATBOT API ENDPOINTS
+# ============================================================================
 
 # Enhanced helper functions for health checks
 def test_environment_variables():
