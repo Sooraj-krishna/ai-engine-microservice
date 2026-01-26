@@ -13,6 +13,47 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
 GEMINI_PRO_MODEL = os.getenv("GEMINI_PRO_MODEL", "gemini-pro")
 
 
+def get_generation_config(task_type: str = "default", estimated_size: str = "medium"):
+    """
+    Get optimized generation config based on task type.
+    
+    Args:
+        task_type: Type of generation task (new_feature, bug_fix, ui_modification, default)
+        estimated_size: Expected output size (small, medium, large)
+    
+    Returns:
+        Dict with temperature and max_output_tokens
+    """
+    configs = {
+        "new_feature": {
+            "temperature": 0.4,  # More creative for new features
+            "max_tokens": 16384
+        },
+        "bug_fix": {
+            "temperature": 0.15,  # More precise for fixes
+            "max_tokens": 8192
+        },
+        "ui_modification": {
+            "temperature": 0.3,  # Balanced for UI changes
+            "max_tokens": 12288
+        },
+        "default": {
+            "temperature": 0.2,  # Slightly increased from 0.1 for better variety
+            "max_tokens": 16384  # Increased from 8192 to prevent truncation
+        }
+    }
+    
+    config = configs.get(task_type, configs["default"])
+    
+    # Adjust tokens based on estimated size
+    if estimated_size == "large":
+        config["max_tokens"] = min(config["max_tokens"] * 2, 32768)
+    elif estimated_size == "small":
+        config["max_tokens"] = max(config["max_tokens"] // 2, 4096)
+    
+    return config
+
+
 def _get_available_models():
     """List available Gemini models and return the first one that supports generateContent."""
     try:
@@ -108,14 +149,18 @@ def _query_gemini_api(
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
             }
             
+            # Get optimized generation config (can be overridden via prompt metadata)
+            # Default to safer config with higher token limit
+            gen_config = get_generation_config("default", "medium")
+            
             # Generate content with Gemini
             response = model_instance.generate_content(
                 full_prompt,
                 safety_settings=safety_settings,
                 generation_config=genai.types.GenerationConfig(
-                    temperature=0.1,
+                    temperature=gen_config["temperature"],
                     top_p=0.8,
-                    max_output_tokens=8192,  # Increased from 2048 to allow complete code responses
+                    max_output_tokens=gen_config["max_tokens"],
                 )
             )
             

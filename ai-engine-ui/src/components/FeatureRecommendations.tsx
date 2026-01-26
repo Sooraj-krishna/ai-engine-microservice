@@ -28,9 +28,10 @@ interface Feature {
 
 interface FeatureRecommendationsProps {
   onFeatureSelect?: (featureId: string) => void;
+  onOpenChatbot?: (featureId: string, sessionId: string) => void;
 }
 
-export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecommendationsProps) {
+export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot }: FeatureRecommendationsProps) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
@@ -50,6 +51,15 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
     setError(null);
     try {
       const response = await fetch('http://localhost:8000/feature-recommendations');
+      
+      // Check if response is actually JSON before parsing
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        setError('Server returned non-JSON response. API might be unavailable.');
+        setLoading(false);
+        return;
+      }
+      
       if (response.ok) {
         const data = await response.json();
         setFeatures(data.feature_gaps || []);
@@ -60,7 +70,7 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
       }
     } catch (error) {
       console.error('Failed to fetch feature recommendations:', error);
-      setError('Network error fetching recommendations');
+      setError('Network error or API unavailable. Run competitive analysis first.');
     } finally {
       setLoading(false);
     }
@@ -121,14 +131,26 @@ export default function FeatureRecommendations({ onFeatureSelect }: FeatureRecom
       });
 
       if (response.ok) {
+        const data = await response.json();
         setSelectedFeature(featureId);
+        
+        // Legacy callback
         if (onFeatureSelect) {
           onFeatureSelect(featureId);
         }
-        alert('Feature selected for future implementation!');
+        
+        // New chatbot integration
+        if (data.success && data.session_id && onOpenChatbot) {
+          console.log(`[FEATURE_SELECT] Opening chatbot with session ${data.session_id}`);
+          onOpenChatbot(featureId, data.session_id);
+        } else {
+          // Fallback alert if no chatbot handler
+          alert(`✅ Feature '${data.feature_name}' sent to chatbot for implementation!`);
+        }
       }
     } catch (error) {
       console.error('Failed to select feature:', error);
+      alert('❌ Failed to select feature. Please try again.');
     }
   };
 

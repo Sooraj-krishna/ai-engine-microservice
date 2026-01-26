@@ -146,10 +146,21 @@ class ChatbotManager:
         intent = intent_data["intent"]
         entities = intent_data.get("entities", {})
         
-        # Generate implementation plan
+        # CRITICAL: Detect tech stack BEFORE generating plan
+        print(f"[CHATBOT] Detecting tech stack for intent: {intent}")
+        tech_stack_context = await self._detect_tech_stack()
+        
+        if tech_stack_context:
+            tech_stack = tech_stack_context.get("tech_stack", {})
+            print(f"[CHATBOT] Tech stack detected: {tech_stack.get('framework')} + {tech_stack.get('language')}")
+        else:
+            print(f"[CHATBOT] No tech stack detected, using defaults")
+        
+        # Generate implementation plan WITH tech stack context
         print(f"[CHATBOT] Generating plan for intent: {intent}")
         plan = self.plan_generator.generate_plan(
-            intent, user_message, entities, conversation_history
+            intent, user_message, entities, conversation_history,
+            tech_stack_context=tech_stack_context  # NEW: Pass tech stack
         )
         
         if "error" in plan:
@@ -173,7 +184,8 @@ class ChatbotManager:
             "response": response_text,
             "intent": intent,
             "plan": plan,
-            "change_id": change_id,
+            "plan_id": change_id,  # Frontend expects plan_id, not change_id
+            "change_id": change_id,  # Keep for backwards compatibility
             "requires_approval": True,
             "metadata": {
                 "confidence": intent_data.get("confidence"),
@@ -322,6 +334,55 @@ Just describe what you need in natural language, and I'll create a plan for you 
         response += "Would you like me to proceed with this plan? (Click Apply to confirm)"
         
         return response
+    
+    async def _detect_tech_stack(self) -> Dict:
+        """
+        Detect project tech stack and structure before generating plan.
+        This ensures AI generates correct file types (.tsx vs .js) and paths.
+        
+        Returns:
+            Dict with tech_stack, project_structure, and repo_path
+        """
+        try:
+            from github_handler import clone_or_pull_repo
+            from code_analyzer import CodeAnalyzer
+            import os
+            
+            # Check if GITHUB_REPO is configured
+            github_repo = os.getenv("GITHUB_REPO")
+            if not github_repo:
+                print("[CHATBOT] GITHUB_REPO not configured, skipping tech stack detection")
+                return {}
+            
+            print("[CHATBOT] Cloning/pulling repository for tech stack analysis...")
+            repo_path = clone_or_pull_repo()
+            
+            if not repo_path or not os.path.exists(repo_path):
+                print(f"[CHATBOT] Repository not accessible: {repo_path}")
+                return {}
+            
+            print(f"[CHATBOT] Analyzing codebase at {repo_path}...")
+            analyzer = CodeAnalyzer(repo_path)
+            analyzer.analyze_repository()
+            
+            summary = analyzer.get_codebase_summary()
+            tech_stack = summary.get("tech_stack", {})
+            structure = summary.get("project_structure", {})
+            
+            print(f"[CHATBOT] ✅ Detected: {tech_stack.get('framework', 'unknown')} + " +
+                  f"{tech_stack.get('language', 'javascript')} in {structure.get('structure_type', 'unknown')}")
+            
+            return {
+                "tech_stack": tech_stack,
+                "project_structure": structure,
+                "repo_path": repo_path
+            }
+            
+        except Exception as e:
+            print(f"[CHATBOT] Tech stack detection failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
     
     def _get_welcome_message(self) -> str:
         """Get welcome message for new sessions."""

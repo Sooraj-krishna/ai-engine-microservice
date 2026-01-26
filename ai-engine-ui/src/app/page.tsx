@@ -14,6 +14,8 @@ export default function Home() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  const [chatbotSessionId, setChatbotSessionId] = useState<string | null>(null);
+  const [chatbotOpen, setChatbotOpen] = useState(false);
 
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:8000/ws/logs');
@@ -43,6 +45,12 @@ export default function Home() {
     };
   }, []); // Empty dependency array means this effect runs once on mount
 
+  // Handler for when a feature is selected from competitive analysis
+  const handleFeatureSelected = (featureId: string, sessionId: string) => {
+    console.log(`[PAGE] Feature ${featureId} selected, opening chatbot with session ${sessionId}`);
+    setChatbotSessionId(sessionId);
+    setChatbotOpen(true);
+  };
 
   return (
     <div className="min-h-screen">
@@ -77,7 +85,7 @@ export default function Home() {
         <FeatureImplementationStatus />
 
         {/* Feature Recommendations - Competitive Analysis */}
-        <FeatureRecommendations />
+        <FeatureRecommendations onOpenChatbot={handleFeatureSelected} />
 
         {/* Logs Display */}
         <div className="glass-card rounded-xl p-6 smooth-transition hover:shadow-2xl">
@@ -89,7 +97,11 @@ export default function Home() {
       </main>
 
       {/* AI Chatbot Widget */}
-      <ChatWidget />
+      <ChatWidget 
+        externalSessionId={chatbotSessionId}
+        isExternallyOpened={chatbotOpen}
+        onClose={() => setChatbotOpen(false)}
+      />
     </div>
   );
 }

@@ -26,36 +26,43 @@ def _build_prompt(prompt, language):
             line=0,
             code="",
             original_prompt=f"""
-You are an expert software developer. Generate clean, production-ready {language} code for the following task:
+You are an expert software developer generating production-ready {language} code.
 
 TASK: {prompt}
 
+VALIDATION REQUIREMENTS (your code will be automatically checked):
+✓ Security: No eval(), innerHTML, document.write(), or command injection
+✓ Syntax: Valid {language} with proper types (TypeScript/JSX compliance)
+✓ Imports: All import paths must resolve correctly
+✓ Naming: Component names must match filenames exactly
+✓ No duplicates: No duplicate function/class names
+
 REQUIREMENTS:
-- Write clean, concise code
-- MINIMAL COMMENTS ONLY - brief one-liners where absolutely necessary
-- NO long explanatory comments or documentation blocks
-- Follow best practices for {language}
-- Make the code ready to use
-- Return ONLY the code, no explanations or markdown
+- Clean, minimal code with brief comments only where needed
+- Follow {language} best practices
+- Return ONLY code, no explanations or markdown
 
 CODE:
 """
         )
         return optimized
     except:
-        # Fallback to standard prompt
+        # Fallback to improved standard prompt
         return f"""
-You are an expert software developer. Generate clean, production-ready {language} code for the following task:
+You are an expert software developer generating production-ready {language} code.
 
 TASK: {prompt}
 
+VALIDATION REQUIREMENTS (code will be checked for):
+✓ Security: No eval(), innerHTML, document.write()
+✓ Syntax: Valid {language} syntax
+✓ Imports must resolve correctly
+✓ Component names match filenames
+
 REQUIREMENTS:
-- Write clean, concise code
-- MINIMAL COMMENTS ONLY - brief one-liners where absolutely necessary
-- NO long explanatory comments or documentation blocks
-- Follow best practices for {language}
-- Make the code ready to use
-- Return ONLY the code, no explanations or markdown
+- Clean code with minimal comments
+- Follow {language} best practices
+- Return ONLY code, no markdown
 
 CODE:
 """

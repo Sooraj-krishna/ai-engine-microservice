@@ -458,17 +458,17 @@ async def get_feature_recommendations():
 @app.post("/select-feature")
 async def select_feature_to_implement(request: dict):
     """
-    User selects which feature to implement next.
-    Creates selection record, generates implementation plan, and tracks status.
+    User selects which feature to implement next from competitive analysis.
+    Uses chatbot workflow for consistent implementation with plan generation and approval.
     
     Request body:
         - feature_id: ID of the feature to select
-        - generate_plan: (optional, default=True) Whether to generate implementation plan
+        - user_id: (optional, default='default') User identifier for session
     """
     global competitive_analysis_results
     
     feature_id = request.get("feature_id")
-    generate_plan = request.get("generate_plan", True)
+    user_id = request.get("user_id", "default")
     
     if not feature_id:
         return JSONResponse(
@@ -492,23 +492,59 @@ async def select_feature_to_implement(request: dict):
             content={"error": f"Feature {feature_id} not found"}
         )
     
-    # Use feature implementation manager to handle selection
     try:
-        result = feature_implementation_manager.select_feature_for_implementation(
-            feature=selected_feature,
-            analysis_results=competitive_analysis_results,
-            generate_plan=generate_plan
+        print(f"[FEATURE_SELECT] Feature selected: {selected_feature.get('name')}")
+        print(f"[FEATURE_SELECT] Using chatbot workflow for implementation")
+        
+        # Create or get existing session for this user
+        session = chatbot_manager.create_session(user_id)
+        session_id = session["session_id"]
+        
+        # Construct natural language request for the feature
+        feature_name = selected_feature.get("name", "Unknown Feature")
+        description = selected_feature.get("description", "")
+        implementation_notes = selected_feature.get("implementation_notes", "")
+        complexity = selected_feature.get("complexity", "medium")
+        business_impact = selected_feature.get("business_impact", "medium")
+        
+        # Create detailed feature request message
+        feature_request = f"""Implement the feature: {feature_name}
+
+Description: {description}
+
+Implementation Notes: {implementation_notes}
+
+Complexity: {complexity}
+Business Impact: {business_impact}
+
+This feature was identified through competitive analysis and is present in competitor sites. Please create an implementation plan."""
+        
+        print(f"[FEATURE_SELECT] Processing feature through chatbot...")
+        
+        # Process through chatbot workflow
+        chatbot_response = await chatbot_manager.process_message(
+            session_id,
+            feature_request
         )
         
-        print(f"[FEATURE_IMPL] Feature selected: {selected_feature.get('name')}")
-        print(f"[FEATURE_IMPL] Status: {result['status']}")
-        if result.get("implementation_plan"):
-            print(f"[FEATURE_IMPL] Implementation plan generated with {len(result['implementation_plan'].get('implementation_steps', []))} steps")
+        print(f"[FEATURE_SELECT] Chatbot response generated")
+        print(f"[FEATURE_SELECT] Has plan: {chatbot_response.get('plan') is not None}")
+        print(f"[FEATURE_SELECT] Requires approval: {chatbot_response.get('requires_approval', False)}")
         
-        return JSONResponse(content=result)
+        # Return chatbot session and response
+        return JSONResponse(content={
+            "success": True,
+            "session_id": session_id,
+            "feature_id": feature_id,
+            "feature_name": feature_name,
+            "chatbot_response": chatbot_response,
+            "message": f"Feature '{feature_name}' sent to chatbot for implementation planning"
+        })
         
     except Exception as e:
         print(f"[ERROR] Failed to select feature: {e}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"error": f"Failed to select feature: {str(e)}"}
@@ -559,20 +595,46 @@ async def update_feature_status(feature_id: str, request: dict):
         )
     
     try:
-        updated_feature = feature_implementation_manager.update_feature_status(
-            feature_id, new_status, notes
-        )
-        return JSONResponse(content={
-            "message": f"Feature status updated to '{new_status}'",
-            "feature": updated_feature
-        })
+        # CRITICAL: If status is changing to in_progress, execute the implementation!
+        if new_status == "in_progress":
+            print(f"[FEATURE_STATUS] Starting implementation execution for {feature_id}")
+            
+            # Update status first
+            updated_feature = feature_implementation_manager.update_feature_status(
+                feature_id, new_status, notes or "Implementation started"
+            )
+            
+            # Execute the actual implementation
+            execution_result = await feature_implementation_manager.execute_implementation(
+                feature_id
+            )
+            
+            return JSONResponse(content={
+                "message": execution_result.get("message", "Implementation completed"),
+                "feature": updated_feature,
+                "execution_result": execution_result,
+                "success": execution_result.get("success", False)
+            })
+        else:
+            # For other status changes, just update status
+            updated_feature = feature_implementation_manager.update_feature_status(
+                feature_id, new_status, notes
+            )
+            return JSONResponse(content={
+                "message": f"Feature status updated to '{new_status}'",
+                "feature": updated_feature
+            })
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception as e:
+        print(f"[ERROR] Feature status update failed: {e}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"error": f"Failed to update feature status: {str(e)}"}
         )
+
 
 @app.get("/implementation-plan/{feature_id}")
 async def get_implementation_plan(feature_id: str):
@@ -652,6 +714,172 @@ async def generate_plan_for_feature(feature_id: str):
             status_code=500,
             content={"error": f"Failed to generate plan: {str(e)}"}
         )
+
+
+# ================== CHATBOT API ENDPOINTS ==================
+
+class ChatMessageRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class ChatApprovalRequest(BaseModel):
+    plan_id: str
+    session_id: str
+
+@app.post("/api/chatbot/message")
+async def chatbot_message(request: ChatMessageRequest):
+    """Send a message to the chatbot and get a response."""
+    try:
+        # Create or get session
+        if request.session_id:
+            session = chatbot_manager.get_session(request.session_id)
+            if not session:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": "Session not found"}
+                )
+            session_id = request.session_id
+        else:
+            # Create new session
+            session = chatbot_manager.create_session()
+            session_id = session["session_id"]
+       
+        # Process the message
+        response = await chatbot_manager.process_message(session_id, request.message)
+        
+        # Add session_id to response
+        response["session_id"] = session_id
+        
+        return JSONResponse(content=response)
+        
+    except Exception as e:
+        print(f"[ERROR] Chatbot message failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Chat bot failed: {str(e)}"}
+        )
+
+@app.post("/api/chatbot/approve")
+async def chatbot_approve_plan(request: ChatApprovalRequest):
+    """Approve a chatbot-generated plan and queue it for feature implementation."""
+    try:
+        # Get the pending change
+        pending_change = chat_storage.get_pending_change(request.plan_id)
+        
+        if not pending_change:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Plan not found"}
+            )
+        
+        # Instead of executing directly, add to feature implementation pipeline
+        plan = pending_change.get("plan", {})
+        intent = pending_change.get("intent", "unknown")
+        user_request = pending_change.get("user_request", "")
+        
+        # Create a feature entry for the implementation system
+        feature = {
+            "id": request.plan_id,
+            "name": plan.get("summary", user_request),
+            "description": user_request,
+            "category": _intent_to_category(intent),
+            "complexity": plan.get("complexity", "medium"),
+            "business_impact": "high" if intent == "feature_request" else "medium",
+            "estimated_effort": plan.get("estimated_effort", "Medium"),
+            "implementation_notes": f"Chatbot-generated plan\nIntent: {intent}\n\nSteps:\n" + 
+                "\n".join([f"{i}. {step.get('description', '')}" for i, step in enumerate(plan.get("steps", []), 1)]),
+            "priority_score": 8 if intent in ["bug_fix", "ui_change"] else 6
+        }
+        
+        # Select feature for implementation (adds to dashboard)
+        result = feature_implementation_manager.select_feature_for_implementation(
+            feature=feature,
+            analysis_results={},
+            generate_plan=False  # We already have a plan from chatbot
+        )
+        
+        # Save the chatbot plan to the feature implementation system
+        plan_file = feature_implementation_manager.implementation_plans_dir / f"{request.plan_id}_plan.json"
+        plan_with_metadata = {
+            **plan,
+            "feature_id": request.plan_id,
+            "generated_at": datetime.now().isoformat(),
+            "status": "pending",
+            "source": "chatbot",
+            "intent": intent,
+            "original_request": user_request
+        }
+        
+        with open(plan_file, 'w') as f:
+            import json
+            json.dump(plan_with_metadata, f, indent=2)
+        
+        # Update change status to "queued"
+        chat_storage.update_change_status(request.plan_id, "queued_for_implementation")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": f"✅ Plan approved and added to Feature Implementation Status.\n\nYou can now start the implementation from the dashboard.",
+            "feature_id": request.plan_id,
+            "status": "pending",
+            "dashboard_link": f"/implementation-summary"
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Plan approval failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Approval failed: {str(e)}"}
+        )
+
+def _intent_to_category(intent: str) -> str:
+    """Map chatbot intent to feature category."""
+    mapping = {
+        "ui_change": "UI/UX",
+        "feature_request": "Feature",
+        "bug_fix": "Bug Fix",
+        "competitive_analysis": "Analysis",
+        "refinement": "Enhancement"
+    }
+    return mapping.get(intent, "General")
+
+@app.get("/api/chatbot/session/{session_id}")
+async def get_chatbot_session(session_id: str):
+    """Get chatbot session history."""
+    try:
+        session = chatbot_manager.get_session(session_id)
+        
+        if not session:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        return JSONResponse(content=session)
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get session: {str(e)}"}
+        )
+
+@app.get("/api/chatbot/sessions")
+async def get_all_chatbot_sessions():
+    """Get all chatbot sessions."""
+    try:
+        sessions = chatbot_manager.get_all_sessions()
+        return JSONResponse(content={"sessions": sessions})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get sessions: {str(e)}"}
+        )
+
+# ================== END CHATBOT API ENDPOINTS ==================
 
 
 def perform_manual_rollback():
