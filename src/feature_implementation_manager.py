@@ -554,6 +554,17 @@ Make the plan practical and actionable.
             
             print(f"[FEATURE_IMPL] Generating code for {len(files_to_modify)} files...")
             
+            # NEW: Build list of files being created in this batch
+            # These should be allowed for imports even though they don't exist yet
+            files_being_created = [f.get("file") for f in files_to_modify]
+            print(f"[FEATURE_IMPL] 📝 Files being created in this PR: {files_being_created}")
+            
+            # Update codebase_context to include files being created
+            if codebase_context:
+                codebase_context['files_being_created'] = files_being_created
+            else:
+                codebase_context = {'files_being_created': files_being_created}
+            
             for file_spec in files_to_modify:
                 try:
                     code = await self._generate_file_code(file_spec, plan, feature, codebase_context)
@@ -604,11 +615,14 @@ Make the plan practical and actionable.
             print("[FEATURE_IMPL] 🏗️  Validating builds...")
             try:
                 from build_validator import build_validator
+                from codebase_constraint_builder import CodebaseConstraintBuilder
+                
                 file_contents_dict = {f["path"]: f["content"] for f in generated_files}
+                repo_path = codebase_context.get('repo_path', '')
                 
                 build_result = build_validator.validate_imports(
                     generated_files=file_contents_dict,
-                    repo_path=codebase_context.get('repo_path', '')
+                    repo_path=repo_path
                 )
                 
                 if not build_result['valid']:
@@ -616,30 +630,129 @@ Make the plan practical and actionable.
                     for issue in build_result['issues'][:5]:  # Show first 5
                         print(f"  - {issue['type']}: {issue['message']}")
                     
-                    # Try to auto-fix issues
-                    print("[BUILD_VALIDATOR] 🔧 Attempting auto-fixes...")
-                    fixed_files = build_validator.generate_fixes(build_result['issues'], file_contents_dict)
+                    # NEW: Check for hallucinated imports (imports to non-existent files)
+                    hallucinated_imports = []
+                    for issue in build_result['issues']:
+                        if issue['type'] == 'unresolved_import':
+                            import_path = issue.get('import_path', '')
+                            
+                            # Check if this file exists in codebase or was generated
+                            file_exists = False
+                            
+                            # Check in generated files
+                            for gen_file in generated_files:
+                                if import_path in gen_file['path'] or gen_file['path'].endswith(import_path):
+                                    file_exists = True
+                                    break
+                            
+                            # Check in existing codebase
+                            if not file_exists and repo_path:
+                                try:
+                                    constraint_builder = CodebaseConstraintBuilder(repo_path)
+                                    existing_files = constraint_builder.get_existing_files_list()
+                                    
+                                    for existing_file in existing_files:
+                                        if import_path in existing_file or existing_file.endswith(import_path):
+                                            file_exists = True
+                                            break
+                                except:
+                                    pass
+                            
+                            if not file_exists:
+                                print(f"[BUILD_VALIDATOR] 🚨 HALLUCINATED IMPORT DETECTED: {import_path}")
+                                print(f"[BUILD_VALIDATOR]    File: {issue.get('file')}")
+                                hallucinated_imports.append(issue)
                     
-                    if fixed_files:
-                        print(f"[BUILD_VALIDATOR] ✅ Auto-fixed {len(fixed_files)} files")
-                        # Apply fixes
-                        for fixed_path, fixed_content in fixed_files.items():
-                            existing = next((f for f in generated_files if f["path"] == fixed_path), None)
-                            if existing:
-                                existing['content'] = fixed_content
-                                print(f"[BUILD_VALIDATOR]   ✓ Updated {fixed_path}")
+                    if hallucinated_imports:
+                        # Files with hallucinated imports need regeneration, not fixing
+                        print(f"[BUILD_VALIDATOR] 🔄 {len(hallucinated_imports)} file(s) have hallucinated imports - regenerating with STRICT constraints...")
                         
-                        # Re-validate after fixes
+                        # Group issues by file
+                        issues_by_file = {}
+                        for issue in hallucinated_imports:
+                            file_path = issue.get('file')
+                            if file_path not in issues_by_file:
+                                issues_by_file[file_path] = []
+                            issues_by_file[file_path].append(issue)
+                        
+                        # Regenerate files with hallucinated imports (max 2 attempts per file)
+                        for file_path, file_issues in issues_by_file.items():
+                            print(f"[BUILD_VALIDATOR] Regenerating {file_path} (found {len(file_issues)} halluci nated imports)")
+                            
+                            # Find file spec
+                            file_spec = None
+                            for f in files_to_modify:
+                                if f.get('file') == file_path:
+                                    file_spec = f
+                                    break
+                            
+                            if file_spec:
+                                try:
+                                    # Regenerate with explicit warning about hallucinated imports
+                                    print(f"[BUILD_VALIDATOR] ⛔ STRICT MODE: Listing exact import violations...")
+                                    violated_imports = [issue.get('import_path') for issue in file_issues]
+                                    print(f"[BUILD_VALIDATOR]    Invalid imports: {violated_imports}")
+                                    
+                                    new_code = await self._generate_file_code(
+                                        file_spec=file_spec,
+                                        plan=plan,
+                                        feature=feature,
+                                        codebase_context=codebase_context
+                                    )
+                                    
+                                    # Update the generated file
+                                    for gen_file in generated_files:
+                                        if gen_file['path'] == file_path:
+                                            gen_file['content'] = new_code
+                                            print(f"[BUILD_VALIDATOR] ✅ Regenerated {file_path}")
+                                            break
+                                            
+                                except Exception as e:
+                                    print(f"[BUILD_VALIDATOR] ⚠️  Regeneration failed for {file_path}: {e}")
+                        
+                        # Re-validate after regeneration
                         file_contents_dict = {f["path"]: f["content"] for f in generated_files}
-                        revalidation = build_validator.validate_imports(file_contents_dict, repo_path=codebase_context.get('repo_path', ''))
+                        revalidation = build_validator.validate_imports(file_contents_dict, repo_path=repo_path)
                         
                         if revalidation['valid']:
-                            print("[BUILD_VALIDATOR] ✅ All build issues resolved!")
+                            print("[BUILD_VALIDATOR] ✅ All hallucinated imports fixed through regeneration!")
                         else:
-                            print(f"[BUILD_VALIDATOR] ⚠️  Still have {len(revalidation['issues'])} unresolved issues")
-                            # Continue anyway but log the issues
+                            remaining_issues = len(revalidation['issues'])
+                            print(f"[BUILD_VALIDATOR] ⚠️  Still have {remaining_issues} issues after regeneration")
+                            
+                            # Try standard auto-fixes for remaining issues
+                            fixed_files = build_validator.generate_fixes(revalidation['issues'], file_contents_dict)
+                            if fixed_files:
+                                for fixed_path, fixed_content in fixed_files.items():
+                                    existing = next((f for f in generated_files if f["path"] == fixed_path), None)
+                                    if existing:
+                                        existing['content'] = fixed_content
+                                print(f"[BUILD_VALIDATOR] ✅ Applied {len(fixed_files)} additional auto-fixes")
                     else:
-                        print("[BUILD_VALIDATOR] ⚠️  Could not auto-fix all issues")
+                        # No hallucinated imports -  try standard auto-fixes
+                        print("[BUILD_VALIDATOR] 🔧 Attempting auto-fixes...")
+                        fixed_files = build_validator.generate_fixes(build_result['issues'], file_contents_dict)
+                        
+                        if fixed_files:
+                            print(f"[BUILD_VALIDATOR] ✅ Auto-fixed {len(fixed_files)} files")
+                            # Apply fixes
+                            for fixed_path, fixed_content in fixed_files.items():
+                                existing = next((f for f in generated_files if f["path"] == fixed_path), None)
+                                if existing:
+                                    existing['content'] = fixed_content
+                                    print(f"[BUILD_VALIDATOR]   ✓ Updated {fixed_path}")
+                            
+                            # Re-validate after fixes
+                            file_contents_dict = {f["path"]: f["content"] for f in generated_files}
+                            revalidation = build_validator.validate_imports(file_contents_dict, repo_path=repo_path)
+                            
+                            if revalidation['valid']:
+                                print("[BUILD_VALIDATOR] ✅ All build issues resolved!")
+                            else:
+                                print(f"[BUILD_VALIDATOR] ⚠️  Still have {len(revalidation['issues'])} unresolved issues")
+                                # Continue anyway but log the issues
+                        else:
+                            print("[BUILD_VALIDATOR] ⚠️  Could not auto-fix all issues")
                 else:
                     print("[BUILD_VALIDATOR] ✅ Build validation passed - no issues found!")
                     
@@ -647,6 +760,7 @@ Make the plan practical and actionable.
                 print(f"[BUILD_VALIDATOR] ⚠️  Build validation failed: {e}")
                 import traceback
                 traceback.print_exc()
+
             
             
             # Write files to repository and create PR
@@ -729,9 +843,12 @@ Make the plan practical and actionable.
         
         # Extract tech stack and structure info
         tech_stack_info = ""
+        codebase_constraints = ""  # NEW: Add comprehensive constraints
+        
         if codebase_context:
             tech_stack = codebase_context.get('tech_stack', {})
             project_structure = codebase_context.get('project_structure', {})
+            repo_path = codebase_context.get('repo_path', '')
             
             tech_stack_info = f"""\n\nCODEBASE CONTEXT:
 Framework: {tech_stack.get('framework', 'unknown')}
@@ -744,6 +861,32 @@ IMPORTANT CODE GENERATION RULES:
 - Match the existing codebase patterns
 - Use {tech_stack.get('framework', 'vanilla JS')} syntax if applicable
 """
+            
+            # NEW: Build comprehensive constraints to prevent hallucinated imports
+            if repo_path:
+                try:
+                    from codebase_constraint_builder import CodebaseConstraintBuilder
+                    
+                    print(f"[FEATURE_IMPL] 🔒 Building codebase constraints to prevent hallucinated imports...")
+                    constraint_builder = CodebaseConstraintBuilder(repo_path)
+                    
+                    # NEW: Add files being created in this PR to the allowed imports
+                    files_being_created = codebase_context.get('files_being_created', [])
+                    codebase_constraints = "\n\n" + constraint_builder.build_complete_constraints(
+                        tech_stack, 
+                        files_being_created=files_being_created
+                    )
+                    
+                    if files_being_created:
+                        print(f"[FEATURE_IMPL] ℹ️  Allowing imports from {len(files_being_created)} files being created in this PR")
+                    
+                    print(f"[FEATURE_IMPL] ✅ Constraint builder loaded ({len(codebase_constraints)} chars)")
+                    
+                except Exception as e:
+                    print(f"[FEATURE_IMPL] ⚠️  Could not build codebase constraints: {e}")
+                    import traceback
+                    traceback.print_exc()
+
         
         # Build prompt based on whether file exists
         if existing_code:
@@ -753,6 +896,7 @@ IMPORTANT CODE GENERATION RULES:
 File: {filename}
 Changes Needed: {changes_needed}
 {tech_stack_info}
+{codebase_constraints}
 
 Feature Context:
 Name: {plan.get('feature_name')}
@@ -832,6 +976,7 @@ Respond with ONLY the code, no explanations or markdown formatting.
 File: {filename}
 Purpose: {changes_needed}
 {tech_stack_info}
+{codebase_constraints}
 
 Feature Context:
 Name: {plan.get('feature_name')}
@@ -930,12 +1075,24 @@ Respond with ONLY the code, no explanations or markdown formatting.
             return code.strip()
             
         except Exception as e:
-            print(f"[ERROR] Code generation failed for {filename}: {e}")
-            # Return existing code if generation failed
+            error_msg = f"Code generation failed for {filename}: {e}"
+            print(f"[ERROR] {error_msg}")
+            
+            # Check if this is a quota/API error that should stop execution
+            if "quota" in str(e).lower() or "429" in str(e) or "rate limit" in str(e).lower():
+                print(f"[FEATURE_IMPL] ⛔ QUOTA/API ERROR - Cannot proceed with PR creation")
+                # Re-raise to stop PR creation entirely
+                raise Exception(f"Cannot create PR: {error_msg}")
+            
+            # For other errors, try to return existing code if available
             if existing_code:
                 print(f"[FEATURE_IMPL] Returning existing code due to generation failure")
                 return existing_code
-            return f"// ERROR: Failed to generate code for {filename}\n// Error: {str(e)}\n"
+            
+            # If no existing code and it's not a file we're creating, this is critical
+            print(f"[FEATURE_IMPL] ⛔ CRITICAL: No code available for {filename}")
+            raise Exception(f"Cannot generate required file {filename}: {error_msg}")
+
 
     
     def _get_feature_by_id(self, feature_id: str) -> Optional[Dict]:
