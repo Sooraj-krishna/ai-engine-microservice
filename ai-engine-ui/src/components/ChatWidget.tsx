@@ -194,30 +194,32 @@ export function ChatWidget({
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 flex items-center justify-center hover:scale-110 z-50"
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-red-600 hover:to-red-500 text-white rounded-full shadow-2xl shadow-cyan-950/50 hover:shadow-cyan-900/50 transition-all duration-300 flex items-center justify-center hover:scale-110 z-40"
           aria-label="Open AI Chat"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-7 h-7" />
         </button>
       )}
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-zinc-950 rounded-lg shadow-2xl shadow-cyan-950/50 flex flex-col z-40 border border-cyan-900/30">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
+          <div className="flex items-center justify-between p-4 border-b border-cyan-900/30 bg-gradient-to-r from-cyan-600 to-teal-500 text-white rounded-t-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <MessageCircle className="w-5 h-5" />
+              </div>
               <div>
-                <h3 className="font-semibold">AI Assistant</h3>
-                <p className="text-xs opacity-90">
+                <h3 className="font-bold uppercase tracking-wider">AI Assistant</h3>
+                <p className="text-xs opacity-75">
                   {sessionId ? `Session: ${sessionId.slice(0, 8)}` : 'New conversation'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="hover:bg-white/20 p-1 rounded transition-colors"
+              className="hover:bg-white/20 p-2 rounded-lg transition-colors"
               aria-label="Close chat"
             >
               <X className="w-5 h-5" />
@@ -225,12 +227,12 @@ export function ChatWidget({
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40 scrollbar-thin">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
-                <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Start a conversation with the AI assistant</p>
-                <p className="text-sm mt-2">Try: "Change the website font to italic"</p>
+              <div className="text-center text-zinc-500 mt-8">
+                <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-zinc-400 font-bold uppercase tracking-wider text-sm">Start a Conversation</p>
+                <p className="text-xs mt-2 text-zinc-600">Try: "Implement a new feature"</p>
               </div>
             )}
 
@@ -240,12 +242,12 @@ export function ChatWidget({
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
                     msg.role === 'user'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-lg shadow-cyan-950/50'
                       : msg.role === 'system'
-                      ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 border border-yellow-300 dark:border-yellow-700'
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600'
+                      ? 'bg-yellow-950/30 text-yellow-400 border border-yellow-800/50'
+                      : 'bg-zinc-900 text-zinc-100 border border-zinc-800 shadow-lg'
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
@@ -264,7 +266,7 @@ export function ChatWidget({
                       <button
                         onClick={() => rejectPlan(msg.metadata!.plan_id!)}
                         disabled={isLoading}
-                        className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
                       >
                         <XCircle className="w-4 h-4" />
                         Reject
@@ -289,11 +291,11 @@ export function ChatWidget({
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-gray-700 rounded-2xl px-4 py-2 border border-gray-200 dark:border-gray-600">
+                <div className="bg-zinc-900 rounded-lg px-4 py-3 border border-zinc-800">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -303,7 +305,7 @@ export function ChatWidget({
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="p-4 border-t border-cyan-900/30 bg-zinc-950">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -312,12 +314,12 @@ export function ChatWidget({
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-cyan-600 placeholder:text-zinc-600 disabled:opacity-50"
               />
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-3 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-red-600 hover:to-red-500 text-white rounded-lg hover:shadow-lg shadow-cyan-950/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
                 <Send className="w-5 h-5" />

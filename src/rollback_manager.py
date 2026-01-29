@@ -15,7 +15,7 @@ class RollbackManager:
         self.history_file = history_file
         self.history = self.load_history()
         self.rollback_triggers = {
-            "critical_memory_usage": 95,      # Memory usage percentage
+            "critical_memory_usage": 98,      # Memory usage percentage (increased to 98% for systems with high baseline usage)
             "critical_cpu_usage": 95,         # CPU usage percentage
             "error_rate_threshold": 50,       # Number of errors
             "response_time_threshold": 10.0,  # Response time in seconds

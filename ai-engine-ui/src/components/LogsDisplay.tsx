@@ -43,12 +43,12 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
 
   const getLogColor = (level: string) => {
     switch (level) {
-      case 'error': return 'text-red-600 bg-red-50';
-      case 'warning': return 'text-yellow-600 bg-yellow-50';
-      case 'success': return 'text-green-600 bg-green-50';
-      case 'debug': return 'text-blue-600 bg-blue-50';
-      case 'info': return 'text-gray-600 bg-gray-50';
-      default: return 'text-gray-800 bg-white';
+      case 'error': return 'text-cyan-400';
+      case 'warning': return 'text-yellow-400';
+      case 'success': return 'text-green-400';
+      case 'debug': return 'text-blue-400';
+      case 'info': return 'text-zinc-300';
+      default: return 'text-green-400';
     }
   };
 
@@ -74,19 +74,19 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Terminal className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Logs ({filteredLogs.length})
+            <Terminal className="h-5 w-5 text-cyan-400" />
+            <span className="text-sm font-bold text-white uppercase tracking-wider">
+              Terminal ({filteredLogs.length})
             </span>
           </div>
           
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="all">All Logs</option>
             <option value="info">Info</option>
@@ -100,10 +100,10 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsAutoScroll(!isAutoScroll)}
-            className={`px-3 py-1 text-sm rounded-md ${
+            className={`px-3 py-1 text-xs uppercase tracking-wider font-bold rounded-lg border ${
               isAutoScroll 
-                ? 'bg-blue-100 text-blue-700' 
-                : 'bg-gray-100 text-gray-700'
+                ? 'bg-cyan-900/50 text-cyan-400 border-cyan-800' 
+                : 'bg-zinc-900 text-zinc-400 border-zinc-700'
             }`}
           >
             Auto-scroll {isAutoScroll ? 'ON' : 'OFF'}
@@ -111,27 +111,27 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
           
           <button
             onClick={downloadLogs}
-            className="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+            className="flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white rounded-lg transition-all text-xs font-bold uppercase tracking-wider"
           >
-            <Download className="h-4 w-4" />
-            <span>Download</span>
+            <Download className="h-3 w-3" />
+            Download
           </button>
           
           <button
             onClick={clearLogs}
-            className="flex items-center space-x-1 px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+            className="flex items-center space-x-1 px-3 py-1 text-xs bg-cyan-900/50 text-cyan-400 border border-cyan-800 rounded-lg hover:bg-cyan-800/50 uppercase tracking-wider font-bold"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
             <span>Clear</span>
           </button>
         </div>
       </div>
 
       {/* Logs Container */}
-      <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto">
+      <div className="terminal-display p-4 rounded-lg h-96 overflow-y-auto">
         {filteredLogs.length === 0 ? (
-          <div className="text-gray-500 text-center py-8">
-            No logs available. Start the maintenance cycle to see logs.
+          <div className="text-zinc-600 text-center py-8 font-mono">
+            {'>'}_ No logs available. Start the maintenance cycle to see logs.
           </div>
         ) : (
           filteredLogs.map((log, index) => {
@@ -141,14 +141,14 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
             return (
               <div
                 key={index}
-                className={`mb-1 p-2 rounded ${
-                  level !== 'default' ? colorClass : ''
+                className={`mb-1 py-1 ${
+                  level !== 'default' ? colorClass : 'text-green-400'
                 }`}
               >
-                <span className="text-gray-400">
+                <span className="text-zinc-600">
                   {new Date().toLocaleTimeString()}
                 </span>
-                <span className="ml-2">{log}</span>
+<span className="ml-2"><span className="text-cyan-400">{'>'}</span> {log}</span>
               </div>
             );
           })
@@ -157,36 +157,36 @@ export function LogsDisplay({ logs }: LogsDisplayProps) {
       </div>
 
       {/* Log Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-        <div className="bg-gray-50 p-3 rounded-md text-center">
-          <div className="text-2xl font-bold text-gray-600">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mt-4">
+        <div className="bg-zinc-900/50 border border-zinc-800 p-3 rounded-lg text-center">
+          <div className="text-2xl font-bold text-zinc-400">
             {logs.filter(log => log.includes('[INFO]')).length}
           </div>
-          <div className="text-gray-500">Info</div>
+          <div className="text-zinc-500 uppercase tracking-wider text-xs font-bold">Info</div>
         </div>
-        <div className="bg-green-50 p-3 rounded-md text-center">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="bg-green-950/50 border border-green-800/50 p-3 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-400">
             {logs.filter(log => log.includes('[SUCCESS]')).length}
           </div>
-          <div className="text-green-500">Success</div>
+          <div className="text-green-500 uppercase tracking-wider text-xs font-bold">Success</div>
         </div>
-        <div className="bg-yellow-50 p-3 rounded-md text-center">
-          <div className="text-2xl font-bold text-yellow-600">
+        <div className="bg-yellow-950/50 border border-yellow-800/50 p-3 rounded-lg text-center">
+          <div className="text-2xl font-bold text-yellow-400">
             {logs.filter(log => log.includes('[WARNING]')).length}
           </div>
-          <div className="text-yellow-500">Warning</div>
+          <div className="text-yellow-500 uppercase tracking-wider text-xs font-bold">Warning</div>
         </div>
-        <div className="bg-red-50 p-3 rounded-md text-center">
-          <div className="text-2xl font-bold text-red-600">
+        <div className="bg-cyan-950/50 border border-cyan-800/50 p-3 rounded-lg text-center">
+          <div className="text-2xl font-bold text-cyan-400">
             {logs.filter(log => log.includes('[ERROR]')).length}
           </div>
-          <div className="text-red-500">Error</div>
+          <div className="text-cyan-400 uppercase tracking-wider text-xs font-bold">Error</div>
         </div>
-        <div className="bg-blue-50 p-3 rounded-md text-center">
-          <div className="text-2xl font-bold text-blue-600">
+        <div className="bg-blue-950/50 border border-blue-800/50 p-3 rounded-lg text-center">
+          <div className="text-2xl font-bold text-blue-400">
             {logs.filter(log => log.includes('[DEBUG]')).length}
           </div>
-          <div className="text-blue-500">Debug</div>
+          <div className="text-blue-500 uppercase tracking-wider text-xs font-bold">Debug</div>
         </div>
       </div>
     </div>

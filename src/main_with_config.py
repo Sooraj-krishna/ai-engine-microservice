@@ -11,9 +11,14 @@ from dotenv import load_dotenv
 import traceback
 import asyncio
 
-# Load environment variables from .env file
-env_path = Path('.') / '.env'
+# Load environment variables from .env file in parent directory
+env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
+
+# Debug: Verify critical environment variables are loaded
+print(f"[DEBUG] .env file path: {env_path}")
+print(f"[DEBUG] .env file exists: {env_path.exists()}")
+print(f"[DEBUG] COMPETITOR_URLS loaded: {bool(os.getenv('COMPETITOR_URLS'))}")
 
 # Debug: Print loaded environment variables (remove in production)
 print(f"[DEBUG] Loading environment variables...")
