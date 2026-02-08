@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, Home as HomeIcon, Info, List, BarChart2, History as HistoryIcon, Mail } from 'lucide-react';
+import { X, Home as HomeIcon, Info, List, BarChart2, History as HistoryIcon, Mail, Settings, Bug } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -15,7 +15,9 @@ const menuItems = [
   { name: 'About', href: '/about', icon: Info },
   { name: 'Features', href: '/features', icon: List },
   { name: 'Analysis', href: '/analysis', icon: BarChart2 },
+  { name: 'Bug Review', href: '/bugs', icon: Bug },
   { name: 'History', href: '/history', icon: HistoryIcon },
+  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
 

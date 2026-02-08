@@ -12,8 +12,12 @@ import re
 from typing import List, Dict, Set, Tuple, Optional
 from dataclasses import dataclass
 from collections import Counter
-from industry_detector import industry_detector
-from dynamic_feature_rules import dynamic_rules
+try:
+    from industry_detector import industry_detector
+    from dynamic_feature_rules import dynamic_rules
+except ImportError:
+    from src.industry_detector import industry_detector
+    from src.dynamic_feature_rules import dynamic_rules
 
 
 @dataclass

@@ -1235,9 +1235,9 @@ Respond with ONLY the code, no explanations or markdown formatting.
                 "cancelled": len([f for f in features if f.get("implementation_status") == "cancelled"])
             },
             "by_priority": {
-                "high": len([f for f in features if f.get("priority_score", 0) >= 7]),
-                "medium": len([f for f in features if 4 <= f.get("priority_score", 0) < 7]),
-                "low": len([f for f in features if f.get("priority_score", 0) < 4])
+                "high": len([f for f in features if (f.get("priority_score") or 0) >= 7]),
+                "medium": len([f for f in features if 4 <= (f.get("priority_score") or 0) < 7]),
+                "low": len([f for f in features if (f.get("priority_score") or 0) < 4])
             },
             "by_effort": {
                 "Low": len([f for f in features if f.get("estimated_effort") == "Low"]),

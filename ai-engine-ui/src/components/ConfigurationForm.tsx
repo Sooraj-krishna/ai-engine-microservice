@@ -186,49 +186,6 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
             <option value="ga_logs">GA + Logs</option>
           </select>
         </div>
-
-        {/* Advanced Options Section */}
-        <div className="border-t border-zinc-800 pt-4 mt-4">
-          <h3 className="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">Advanced Options</h3>
-          
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="useImprovedFixer"
-                name="useImprovedFixer"
-                checked={formData.useImprovedFixer}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-red-600 focus:ring-red-500 border-zinc-700 rounded-lg bg-zinc-900"
-              />
-              <label htmlFor="useImprovedFixer" className="text-sm text-zinc-300">
-                <span className="font-bold">Use Improved Fixer</span>
-                <span className="block text-xs text-zinc-500 mt-1">
-                  Enable advanced fixing with code diffs, chunking, and incremental fixes. 
-                  More accurate but experimental.
-                </span>
-              </label>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="testFixesBeforeApply"
-                name="testFixesBeforeApply"
-                checked={formData.testFixesBeforeApply}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-zinc-700 rounded-lg bg-zinc-900"
-              />
-              <label htmlFor="testFixesBeforeApply" className="text-sm text-zinc-300">
-                <span className="font-bold">Test Fixes Before Applying</span>
-                <span className="block text-xs text-zinc-500 mt-1">
-                  Test fixes in isolated environment before creating PRs. Prevents bad fixes from going live.
-                  <span className="text-green-400 font-semibold"> Recommended: ON</span>
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Action Buttons - All in one row */}

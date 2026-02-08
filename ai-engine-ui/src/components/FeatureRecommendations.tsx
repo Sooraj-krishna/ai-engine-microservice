@@ -76,6 +76,28 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
     }
   };
 
+  const pollTaskStatus = async (taskId: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch(`http://localhost:8000/tasks/${taskId}`);
+          const data = await response.json();
+          
+          if (data.ready) {
+            clearInterval(interval);
+            // Get final results
+            const resultResponse = await fetch(`http://localhost:8000/tasks/${taskId}/result`);
+            const resultData = await resultResponse.json();
+            resolve(resultData);
+          }
+        } catch (err) {
+          clearInterval(interval);
+          reject(err);
+        }
+      }, 2000); // Check every 2 seconds
+    });
+  };
+
   const triggerAnalysis = async (isProfessional: boolean = false) => {
     if (isProfessional) {
       setAnalyzingPremium(true);
@@ -92,24 +114,29 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
       });
 
       if (response.ok) {
+        const initialData = await response.json();
+        const taskId = initialData.task_id;
+        
+        console.log(`[ANALYSIS] Task queued: ${taskId}. Polling for results...`);
+        
+        // Wait for task completion
+        await pollTaskStatus(taskId);
+        
         // Analysis complete, fetch recommendations
         await fetchRecommendations();
         setIsPremium(isProfessional);
         
         // Use setTimeout to ensure state updates complete before showing alert
         setTimeout(() => {
-          const hasFeatures = features.length > 0;
           if (isProfessional) {
             alert('✨ Professional analysis completed! Business feature insights loaded.');
-          } else if (hasFeatures) {
-            alert('✅ Competitive analysis completed! Feature recommendations loaded.');
           } else {
-            alert('✅ Analysis completed! No missing features found - your site is competitive!');
+            alert('✅ Competitive analysis completed! Feature recommendations loaded.');
           }
         }, 100);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to run competitive analysis');
+        setError(errorData.error || 'Failed to trigger analysis');
         alert('❌ Analysis failed: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {

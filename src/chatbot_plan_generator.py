@@ -44,10 +44,10 @@ class PlanGenerator:
         # Load repository context for accurate file paths
         if not tech_stack_context:
             # Fallback: load minimal context
-            codebase_context = self._load_codebase_context(intent)
+            codebase_context = self._load_codebase_context(intent, user_message)
         else:
             # Use provided tech stack context
-            codebase_context = self._load_codebase_context(intent) if intent in ["ui_change", "bug_fix"] else {}
+            codebase_context = self._load_codebase_context(intent, user_message) if intent in ["ui_change", "bug_fix"] else {}
         
         # CRITICAL: Extract what user specifically asked for
         key_entities = self._extract_key_entities(user_message, intent)
@@ -73,7 +73,7 @@ class PlanGenerator:
             print(f"[PLAN_GENERATOR] Exception: {e}")
             return self._create_error_plan(user_message, intent)
     
-    def _load_codebase_context(self, intent: str) -> Dict:
+    def _load_codebase_context(self, intent: str, user_message: str = "") -> Dict:
         """Load relevant codebase files for context."""
         try:
             # Only load files for UI changes and bug fixes to save tokens

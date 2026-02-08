@@ -298,7 +298,11 @@ System should return to stable state after this rollback is merged.
             ]
         }
     
+
     def update_rollback_triggers(self, new_triggers):
         """Update rollback trigger thresholds."""
         self.rollback_triggers.update(new_triggers)
         print(f"[ROLLBACK] Updated triggers: {self.rollback_triggers}")
+
+# Global instance
+rollback_manager = RollbackManager()

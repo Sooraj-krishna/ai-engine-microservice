@@ -35,7 +35,7 @@ interface ImplementationSummary {
 }
 
 export default function FeatureImplementationStatus() {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [summary, setSummary] = useState<ImplementationSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);

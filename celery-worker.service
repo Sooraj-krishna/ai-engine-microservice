@@ -1,0 +1,26 @@
+[Unit]
+Description=Celery Worker for AI Engine Microservice
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=forking
+User=devils_hell
+Group=devils_hell
+WorkingDirectory=/home/devils_hell/ai-engine-microservice/src
+Environment="PATH=/home/devils_hell/ai-engine-microservice/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/devils_hell/ai-engine-microservice/venv/bin/celery -A celery_app worker --loglevel=info --detach --pidfile=/tmp/celery-worker.pid --logfile=/var/log/celery-worker.log
+ExecStop=/bin/kill -TERM $MAINPID
+PIDFile=/tmp/celery-worker.pid
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=celery-worker
+
+[Install]
+WantedBy=multi-user.target

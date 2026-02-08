@@ -7,6 +7,8 @@ import { LogsDisplay } from '@/components/LogsDisplay';
 import FeatureImplementationStatus from '@/components/FeatureImplementationStatus';
 import FeatureRecommendations from '@/components/FeatureRecommendations';
 import { ChatWidget } from '@/components/ChatWidget';
+import { TaskQueue } from '@/components/TaskQueue';
+import { Notifications } from '@/components/Notifications';
 import { AnimatedSection } from '@/components/shared/AnimatedSection';
 
 export default function AnalysisPage() {
@@ -116,29 +118,48 @@ export default function AnalysisPage() {
       </div>
 
       <main className="max-w-7xl mx-auto space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Configuration Panel */}
-          <AnimatedSection delay={0.1}>
-            <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
-              <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
-                AI Engine Configuration
-              </h2>
-              <ConfigurationForm
-                onConfigured={handleConfigured}
-                onStatusUpdate={(status) => handleStatusUpdate('Status updated', 'info')}
-              />
-            </div>
-          </AnimatedSection>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Column 1: Config & Notifications */}
+          <div className="space-y-8">
+            <AnimatedSection delay={0.1}>
+              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+                <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
+                  AI Engine Configuration
+                </h2>
+                <ConfigurationForm
+                  onConfigured={handleConfigured}
+                  onStatusUpdate={(status) => handleStatusUpdate('Status updated', 'info')}
+                />
+              </div>
+            </AnimatedSection>
 
-          {/* Status Monitor */}
-          <AnimatedSection delay={0.2}>
-            <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
-              <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
-                System Status
-              </h2>
-              <StatusMonitor status={systemStatus} />
-            </div>
-          </AnimatedSection>
+            <AnimatedSection delay={0.22}>
+              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+                <Notifications />
+              </div>
+            </AnimatedSection>
+          </div>
+
+          {/* Column 2: Status & Task Queue */}
+          <div className="space-y-8">
+            <AnimatedSection delay={0.2}>
+              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+                <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
+                  System Status
+                </h2>
+                <StatusMonitor status={systemStatus} />
+              </div>
+            </AnimatedSection>
+
+            <AnimatedSection delay={0.25}>
+              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+                <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
+                  Background Task Queue
+                </h2>
+                <TaskQueue />
+              </div>
+            </AnimatedSection>
+          </div>
         </div>
 
         {/* Real-time Logs */}

@@ -1,0 +1,748 @@
+[
+  {
+    "id": "bug_20260208_222023_835103",
+    "bug": {
+      "type": "dependency_vulnerability",
+      "severity": "critical",
+      "description": "npm: Vulnerability in @esbuild-kit/core-utils (found in 1 file(s))",
+      "details": "Package: @esbuild-kit/core-utils\nSeverity: moderate\nCVE: No CVE",
+      "framework": "nextjs",
+      "language": "dependencies",
+      "target_file": "package.json",
+      "data": {
+        "type": "npm vulnerability",
+        "package": "@esbuild-kit/core-utils",
+        "severity": "moderate",
+        "cve": "No CVE",
+        "scanner": "npm audit",
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": true,
+      "is_actual_bug": true,
+      "affected_files": [
+        "package.json"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "critical",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835135",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835164",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: landmark-one-main",
+      "details": "Ensure the document has a main landmark. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "landmark-one-main",
+        "impact": "moderate",
+        "description": "Ensure the document has a main landmark",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835168",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835170",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: meta-viewport",
+      "details": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "meta-viewport",
+        "impact": "moderate",
+        "description": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/meta-viewport?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835174",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835176",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: page-has-heading-one",
+      "details": "Ensure that the page, or at least one of its frames contains a level-one heading. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "page-has-heading-one",
+        "impact": "moderate",
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/page-has-heading-one?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835180",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835183",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: region",
+      "details": "Ensure all page content is contained by landmarks. Found in 14 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "region",
+        "impact": "moderate",
+        "description": "Ensure all page content is contained by landmarks",
+        "nodes_affected": 14,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835186",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835189",
+    "bug": {
+      "type": "responsive",
+      "severity": "medium",
+      "description": "Horizontal scrolling detected",
+      "details": "Page has horizontal scroll at Mobile (iPhone) viewport (375x667)",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Horizontal Scroll",
+        "viewport": "Mobile (iPhone)",
+        "dimensions": "375x667"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835192",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_222023_835194",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Performance issue: First Contentful Paint (found in 1 file(s))",
+      "details": "First Contentful Paint marks the time at which the first text or image is painted. [Learn more about the First Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint/).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "First Contentful Paint",
+        "score": 0.61,
+        "details": {},
+        "nodes_affected": 2,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 2
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:20:23.835198",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074210",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Interactive element missing accessible label (found in 1 file(s))",
+      "details": "button element (id: no-id) has no accessible label",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Missing Accessible Label",
+        "element": "button",
+        "nodes_affected": 12,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 12
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074214",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074222",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: image-redundant-alt",
+      "details": "Ensure image alternative is not repeated as text. Found in 4 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "image-redundant-alt",
+        "impact": "minor",
+        "description": "Ensure image alternative is not repeated as text",
+        "nodes_affected": 4,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/image-redundant-alt?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074225",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074228",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: landmark-one-main",
+      "details": "Ensure the document has a main landmark. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "landmark-one-main",
+        "impact": "moderate",
+        "description": "Ensure the document has a main landmark",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074231",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074233",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: meta-viewport",
+      "details": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "meta-viewport",
+        "impact": "moderate",
+        "description": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/meta-viewport?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074236",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074239",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: page-has-heading-one",
+      "details": "Ensure that the page, or at least one of its frames contains a level-one heading. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "page-has-heading-one",
+        "impact": "moderate",
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/page-has-heading-one?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074242",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074244",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: region",
+      "details": "Ensure all page content is contained by landmarks. Found in 14 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "region",
+        "impact": "moderate",
+        "description": "Ensure all page content is contained by landmarks",
+        "nodes_affected": 14,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074247",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074250",
+    "bug": {
+      "type": "responsive",
+      "severity": "medium",
+      "description": "Horizontal scrolling detected",
+      "details": "Page has horizontal scroll at Mobile (iPhone) viewport (375x667)",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Horizontal Scroll",
+        "viewport": "Mobile (iPhone)",
+        "dimensions": "375x667"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074253",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_223934_074255",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Performance issue: First Contentful Paint (found in 1 file(s))",
+      "details": "First Contentful Paint marks the time at which the first text or image is painted. [Learn more about the First Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint/).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "First Contentful Paint",
+        "score": 0.43,
+        "details": {},
+        "nodes_affected": 2,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 2
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:39:34.074258",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499877",
+    "bug": {
+      "type": "dependency_vulnerability",
+      "severity": "critical",
+      "description": "npm: Vulnerability in @esbuild-kit/core-utils (found in 1 file(s))",
+      "details": "Package: @esbuild-kit/core-utils\nSeverity: moderate\nCVE: No CVE",
+      "framework": "nextjs",
+      "language": "dependencies",
+      "target_file": "package.json",
+      "data": {
+        "type": "npm vulnerability",
+        "package": "@esbuild-kit/core-utils",
+        "severity": "moderate",
+        "cve": "No CVE",
+        "scanner": "npm audit",
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": true,
+      "is_actual_bug": true,
+      "affected_files": [
+        "package.json"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "critical",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499900",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499907",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Interactive element missing accessible label (found in 1 file(s))",
+      "details": "button element (id: no-id) has no accessible label",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Missing Accessible Label",
+        "element": "button",
+        "nodes_affected": 12,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 12
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499911",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499913",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: button-name",
+      "details": "Ensure buttons have discernible text. Found in 6 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "button-name",
+        "impact": "critical",
+        "description": "Ensure buttons have discernible text",
+        "nodes_affected": 6,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/button-name?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499916",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499918",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: image-redundant-alt",
+      "details": "Ensure image alternative is not repeated as text. Found in 4 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "image-redundant-alt",
+        "impact": "minor",
+        "description": "Ensure image alternative is not repeated as text",
+        "nodes_affected": 4,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/image-redundant-alt?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499921",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499923",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: landmark-one-main",
+      "details": "Ensure the document has a main landmark. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "landmark-one-main",
+        "impact": "moderate",
+        "description": "Ensure the document has a main landmark",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499925",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499927",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: meta-viewport",
+      "details": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "meta-viewport",
+        "impact": "moderate",
+        "description": "Ensure <meta name=\"viewport\"> does not disable text scaling and zooming",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/meta-viewport?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499930",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499934",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: page-has-heading-one",
+      "details": "Ensure that the page, or at least one of its frames contains a level-one heading. Found in 1 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "page-has-heading-one",
+        "impact": "moderate",
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading",
+        "nodes_affected": 1,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/page-has-heading-one?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499942",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499944",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Axe violation: region",
+      "details": "Ensure all page content is contained by landmarks. Found in 14 element(s).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Axe Violation",
+        "rule_id": "region",
+        "impact": "moderate",
+        "description": "Ensure all page content is contained by landmarks",
+        "nodes_affected": 14,
+        "help_url": "https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499947",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260208_225437_499949",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Slow First Contentful Paint (found in 1 file(s))",
+      "details": "FCP is 2625ms, should be under 1.5s",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Slow FCP",
+        "fcp": 2624.6999999997206,
+        "threshold": 1500,
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-02-08T22:54:37.499952",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  }
+]

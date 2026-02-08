@@ -9,6 +9,7 @@ import ast
 import re
 import json
 from datetime import datetime
+from framework_validator import framework_validator
 
 class CodeValidator:
     """Enhanced validator with context-aware dangerous pattern detection."""
@@ -138,6 +139,14 @@ class CodeValidator:
         elif path.endswith(('.html', '.htm')):
             html_errors = self.validate_html_content(content)
             errors.extend(html_errors)
+        
+        # 4b. Framework-specific validation
+        framework_issues = framework_validator.validate_framework_rules({path: content}, repo_path=bug.get('repo_path') if isinstance(bug, dict) else None)
+        for issue in framework_issues:
+            if issue.get('severity') in ['high', 'critical']:
+                errors.append(f"Framework error: {issue['message']}")
+            else:
+                warnings.append(f"Framework warning: {issue['message']}")
         
         # 5. Check content length
         if len(content) > 50000:

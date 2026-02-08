@@ -41,7 +41,8 @@ except ImportError:
 from github_handler import get_all_repo_files, submit_fix_pr, clone_or_pull_repo
 from analyzer import analyze_data
 from generator import prepare_fixes
-from rollback_manager import RollbackManager
+from notification_service import notification_service
+from rollback_manager import rollback_manager
 from validator import CodeValidator
 from configure_endpoint import router as config_router
 from log_streamer import log_streamer, QueueLogStream
@@ -55,6 +56,24 @@ from pydantic import BaseModel
 from typing import List, Dict, Optional
 import contextlib
 import sys
+from celery_app import celery_app
+from tasks import task_maintenance_cycle, task_manual_rollback, task_analyze_competitors
+
+# In-memory history for task tracking
+task_history = []
+MAX_TASK_HISTORY = 20
+
+def track_task(task_id, task_name):
+    """Add a task to the history tracking."""
+    global task_history
+    task_history.insert(0, {
+        "id": task_id,
+        "name": task_name,
+        "timestamp": datetime.now().isoformat()
+    })
+    # Trim history
+    if len(task_history) > MAX_TASK_HISTORY:
+        task_history = task_history[:MAX_TASK_HISTORY]
 
 app = FastAPI(
     title="AI Engine Microservice",
@@ -66,6 +85,11 @@ app = FastAPI(
 async def startup_event():
     # Start the log broadcasting task
     asyncio.create_task(log_streamer.broadcast_logs())
+    
+    # Start the queue processor for background bug fixing
+    from queue_processor import queue_processor
+    queue_processor.start()
+    print("[INFO] Queue processor started for automated bug fixes")
 
 # Add CORS middleware for the web UI
 app.add_middleware(
@@ -102,7 +126,7 @@ health_status = {
 detected_issues = []
 
 # Initialize safety components
-rollback_manager = RollbackManager()
+# rollback_manager = RollbackManager() # This line is removed as rollback_manager is now imported directly
 code_validator = CodeValidator()
 
 @app.get("/")
@@ -155,13 +179,15 @@ def log_summary():
     return log_summarizer.summary()
 
 @app.post("/run")
-def run_engine(background_tasks: BackgroundTasks):
-    """Trigger AI maintenance cycle with full safety protection."""
-    print("[INFO] AI maintenance cycle requested with safety protection")
-    background_tasks.add_task(start_enhanced_maintenance_cycle)
+def run_engine():
+    """Trigger AI maintenance cycle via Celery worker."""
+    print("[INFO] AI maintenance cycle requested via Celery")
+    task = task_maintenance_cycle.delay()
+    track_task(task.id, "Maintenance Cycle")
     health_status["last_run"] = datetime.now().isoformat()
     return {
-        "message": "Enhanced AI maintenance cycle started", 
+        "message": "AI maintenance cycle task queued", 
+        "task_id": task.id,
         "timestamp": health_status["last_run"],
         "website": os.getenv("WEBSITE_URL"),
         "monitoring_mode": os.getenv("MONITORING_MODE", "simple"),
@@ -230,36 +256,581 @@ def receive_frontend_monitoring_data(data: dict):
     return {"status": "received", "timestamp": datetime.now().isoformat()}
 
 @app.post("/manual-rollback")
-def manual_rollback(background_tasks: BackgroundTasks):
-    """Manually trigger rollback of recent AI changes."""
-    print("[INFO] Manual rollback requested")
-    background_tasks.add_task(perform_manual_rollback)
-    return {"message": "Manual rollback initiated", "timestamp": datetime.now().isoformat()}
+def manual_rollback():
+    """Manually trigger rollback of recent AI changes via Celery."""
+    print("[INFO] Manual rollback requested via Celery")
+    task = task_manual_rollback.delay()
+    track_task(task.id, "Manual Rollback")
+    return {
+        "message": "Manual rollback task queued", 
+        "task_id": task.id,
+        "timestamp": datetime.now().isoformat()
+    }
+
+# ================== BUG QUEUE MONITORING ENDPOINTS ==================
+
+@app.get("/auto-fixes")
+def get_auto_fixes(limit: int = 100):
+    """View all auto-fixed bugs from history."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        history = bug_queue_manager.get_history(limit=limit)
+        
+        # Filter for completed items
+        auto_fixes = [h for h in history if h.get("status") == "completed"]
+        
+        return JSONResponse(content={
+            "total": len(auto_fixes),
+            "auto_fixes": auto_fixes
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get auto-fixes: {str(e)}"}
+        )
+
+@app.get("/auto-fixes/daily-digest")
+def get_daily_digest():
+    """Get summary of today's auto-fixes."""
+    try:
+        from auto_approval_manager import auto_approval_manager
+        stats = auto_approval_manager.get_daily_stats()
+        
+        return JSONResponse(content={
+            "date": stats.get("date"),
+            "summary": stats,
+            "message": f"Today: {stats.get('auto_approved', 0)} auto-approved, {stats.get('requires_approval', 0)} require approval"
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get daily digest: {str(e)}"}
+        )
+
+@app.get("/bug-queue/status")
+def get_bug_queue_status():
+    """Get current queue status."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        from queue_processor import queue_processor
+        
+        queue_status = bug_queue_manager.get_queue_status()
+        processor_status = queue_processor.get_status()
+        
+        return JSONResponse(content={
+            "queue": queue_status,
+            "processor": processor_status,
+            "healthy": processor_status.get("running", False)
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get queue status: {str(e)}"}
+        )
+
+@app.post("/bug-queue/pause")
+def pause_bug_queue():
+    """Emergency pause - stops all auto-approvals and queue processing."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        from auto_approval_manager import auto_approval_manager
+        
+        bug_queue_manager.pause()
+        auto_approval_manager.emergency_pause()
+        
+        return JSONResponse(content={
+            "message": "⚠️ Queue processing and auto-approvals PAUSED",
+            "status": "paused"
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to pause queue: {str(e)}"}
+        )
+
+@app.post("/bug-queue/resume")
+def resume_bug_queue():
+    """Resume queue processing and auto-approvals."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        from auto_approval_manager import auto_approval_manager
+        
+        bug_queue_manager.resume()
+        auto_approval_manager.resume()
+        
+        return JSONResponse(content={
+            "message": "✅ Queue processing and auto-approvals RESUMED",
+            "status": "active"
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to resume queue: {str(e)}"}
+        )
+
+@app.get("/auto-approval/config")
+def get_auto_approval_config():
+    """Get current auto-approval configuration."""
+    try:
+        from auto_approval_manager import auto_approval_manager
+        config = auto_approval_manager.get_config()
+        
+        return JSONResponse(content=config)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get config: {str(e)}"}
+        )
+
+@app.put("/auto-approval/config")
+def update_auto_approval_config(updates: dict):
+    """
+    Update auto-approval configuration.
+    
+    Example request body:
+    {
+        "auto_approve_severities": ["medium", "low"],
+        "silent_severities": ["low"],
+        "max_auto_approvals_per_day": 100
+    }
+    """
+    try:
+        from auto_approval_manager import auto_approval_manager
+        updated_config = auto_approval_manager.update_config(updates)
+        
+        return JSONResponse(content={
+            "message": "Configuration updated",
+            "config": updated_config
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to update config: {str(e)}"}
+        )
+
+# ================== END BUG QUEUE MONITORING ==================
+
+# ================== NOTIFICATION ENDPOINTS ==================
+
+@app.get("/notifications")
+def get_notifications(limit: int = 50):
+    """Get recent notifications."""
+    try:
+        notifications = notification_service.get_notifications(limit=limit)
+        return JSONResponse(content={
+            "notifications": notifications,
+            "total": len(notifications)
+        })
+    except Exception as e:
+        print(f"[API] Error getting notifications: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get notifications: {str(e)}"}
+        )
+
+@app.delete("/notifications")
+def clear_all_notifications():
+    """Clear all notifications (both general and critical)."""
+    try:
+        notification_service.clear_notifications(critical_only=False)
+        notification_service.clear_notifications(critical_only=True)
+        return JSONResponse(content={"message": "All notifications cleared"})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to clear notifications: {str(e)}"}
+        )
+
+@app.delete("/notifications/item")
+def clear_notification_item(timestamp: str):
+    """Clear a specific notification item by timestamp."""
+    try:
+        success = notification_service.clear_by_item(timestamp)
+        if success:
+            return JSONResponse(content={"message": "Notification cleared"})
+        else:
+            return JSONResponse(status_code=404, content={"error": "Notification not found"})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to clear notification: {str(e)}"}
+        )
+
+# ================== BUG REVIEW ENDPOINTS ==================
+
+@app.get("/bugs/pending")
+def get_pending_bugs():
+    """Get all detected bugs awaiting approval, grouped by severity."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        
+        detected_bugs = bug_queue_manager.get_detected_bugs()
+        
+        # Group bugs by severity
+        bugs_by_severity = {
+            "critical": [],
+            "high": [],
+            "medium": [],
+            "low": []
+        }
+        
+        for item in detected_bugs:
+            severity = item.get("severity", "low")
+            bugs_by_severity.setdefault(severity, []).append({
+                "id": item["id"],
+                "type": item["bug"].get("type"),
+                "description": item["bug"].get("description"),
+                "severity": severity,
+                "target_file": item["bug"].get("target_file"),
+                "detected_at": item.get("detected_at"),
+                "framework": item["bug"].get("framework"),
+                "language": item["bug"].get("language")
+            })
+        
+        total = sum(len(bugs) for bugs in bugs_by_severity.values())
+        
+        return JSONResponse(content={
+            "bugs_by_severity": bugs_by_severity,
+            "total": total,
+            "summary": {
+                "critical": len(bugs_by_severity["critical"]),
+                "high": len(bugs_by_severity["high"]),
+                "medium": len(bugs_by_severity["medium"]),
+                "low": len(bugs_by_severity["low"])
+            }
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get pending bugs: {str(e)}"}
+        )
+
+@app.post("/bugs/{bug_id}/approve")
+def approve_bug(bug_id: str):
+    """Approve a detected bug for processing (max 3 queued at once)."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        
+        # Use new approve_bug_to_queue method (enforces 3-bug limit)
+        result = bug_queue_manager.approve_bug_to_queue(bug_id)
+        
+        if not result.get("success"):
+            error_msg = result.get("error", "Approval failed")
+            print(f"[API] Approval failed for {bug_id}: {error_msg}")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": error_msg,
+                    "bug_id": bug_id
+                }
+            )
+        
+        print(f"[API] Bug {bug_id} approved ({result.get('queued_count')}/3 queued)")
+        
+        return JSONResponse(content={
+            "message": "Bug approved and queued for processing",
+            "bug_id": bug_id,
+            "queued_count": result.get("queued_count"),
+            "max_queued": 3
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to approve bug: {str(e)}"}
+        )
+
+@app.delete("/bugs/failed")
+def clear_failed_bugs():
+    """Clear all failed bugs from the queue."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        import json
+        from pathlib import Path
+        
+        queue_file = Path("data/bug_queue/bug_queue.json")
+        if not queue_file.exists():
+            return JSONResponse(content={"message": "No queue found", "cleared": 0})
+        
+        with open(queue_file, 'r') as f:
+            queue = json.load(f)
+        
+        # Remove failed bugs
+        original_count = len(queue)
+        queue = [item for item in queue if item.get("status") != "failed"]
+        cleared_count = original_count - len(queue)
+        
+        # Save updated queue
+        with open(queue_file, 'w') as f:
+            json.dump(queue, f, indent=2)
+        
+        return JSONResponse(content={
+            "message": f"Cleared {cleared_count} failed bugs",
+            "cleared": cleared_count,
+            "remaining": len(queue)
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to clear bugs: {str(e)}"}
+        )
+
+@app.post("/bugs/approve-batch")
+def approve_bugs_by_severity(request: dict):
+    """
+    Bulk approve bugs by severity levels.
+    
+    Body: {"severities": ["critical", "high"]}
+    """
+    try:
+        from bug_queue_manager import bug_queue_manager
+        import json
+        from pathlib import Path
+        
+        severities = request.get("severities", [])
+        if not severities:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No severities specified"}
+            )
+        
+        queue_file = Path("data/bug_queue/bug_queue.json")
+        if not queue_file.exists():
+            return JSONResponse(status_code=404, content={"error": "Bug queue not found"})
+        
+        with open(queue_file, 'r') as f:
+            queue = json.load(f)
+        
+        # Approve all bugs matching severities
+        approved_count = 0
+        for item in queue:
+            if item["status"] == "queued" and item.get("severity") in severities:
+                item["status"] = "approved"
+                item["approved_at"] = datetime.now().isoformat()
+                approved_count += 1
+        
+        # Save updated queue
+        with open(queue_file, 'w') as f:
+            json.dump(queue, f, indent=2)
+        
+        return JSONResponse(content={
+            "message": f"Approved {approved_count} bugs",
+            "approved": approved_count,
+            "severities": severities
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to approve bugs: {str(e)}"}
+        )
+
+# ================== END BUG REVIEW ENDPOINTS ==================
+
+# ================== BUG PROGRESS TRACKING ENDPOINTS ==================
+
+@app.get("/bugs/{bug_id}/progress")
+def get_bug_progress(bug_id: str):
+    """Get real-time progress for a specific bug."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        
+        progress = bug_queue_manager.get_progress(bug_id)
+        
+        if not progress:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Bug not found"}
+            )
+        
+        return JSONResponse(content=progress)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get progress: {str(e)}"}
+        )
+
+@app.get("/bugs/in-progress")
+def get_in_progress_bugs():
+    """Get all bugs currently being processed with their progress."""
+    try:
+        from bug_queue_manager import bug_queue_manager
+        
+        bugs = bug_queue_manager.get_in_progress_bugs()
+        
+        return JSONResponse(content={
+            "bugs": bugs,
+            "total": len(bugs)
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get in-progress bugs: {str(e)}"}
+        )
+
+# ================== END BUG PROGRESS TRACKING ENDPOINTS ==================
+
+@app.get("/notifications/critical")
+def get_critical_notifications():
+    """Get pending critical notifications."""
+    try:
+        notifications = notification_service.get_notifications(limit=50, critical_only=True)
+        return JSONResponse(content={
+            "notifications": notifications,
+            "total": len(notifications)
+        })
+    except Exception as e:
+        print(f"[API] Error getting critical notifications: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get critical notifications: {str(e)}"}
+        )
+
+@app.post("/notifications/critical/{index}/approve")
+def approve_critical_bug(index: int):
+    """Approve and execute a critical bug fix."""
+    try:
+        from pathlib import Path
+        import json
+        
+        critical_file = Path("data/notifications/critical_notifications.json")
+        
+        if not critical_file.exists():
+            return JSONResponse(
+                status_code=404,
+                content={"error": "No critical notifications found"}
+            )
+        
+        with open(critical_file, 'r') as f:
+            critical_bugs = json.load(f)
+        
+        if index < 0 or index >= len(critical_bugs):
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Invalid notification index"}
+            )
+        
+        bug_notification = critical_bugs[index]
+        bug_notification["resolved"] = True
+        bug_notification["approved_at"] = datetime.now().isoformat()
+        
+        # Save updated notifications
+        with open(critical_file, 'w') as f:
+            json.dump(critical_bugs, f, indent=2)
+        
+        # Queue for execution
+        # TODO: Execute the approved plan
+        
+        return JSONResponse(content={
+            "message": "Bug fix approved and queued for execution",
+            "bug": bug_notification
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to approve bug: {str(e)}"}
+        )
+
+# ================== END NOTIFICATION ENDPOINTS ==================
+
+# ================== SETTINGS ENDPOINTS ==================
+
+@app.get("/settings/ai-classification")
+def get_ai_classification_setting():
+    """Get current AI classification setting."""
+    try:
+        import os
+        from dotenv import load_dotenv, set_key, find_dotenv
+        
+        # Reload to get latest value
+        load_dotenv(override=True)
+        
+        use_ai = os.getenv("USE_AI_CLASSIFICATION", "false").lower() == "true"
+        
+        return JSONResponse(content={
+            "use_ai_classification": use_ai,
+            "description": "When enabled, uses AI (Gemini) for bug classification. When disabled, uses rule-based classification to save API tokens."
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get setting: {str(e)}"}
+        )
+
+@app.put("/settings/ai-classification")
+def update_ai_classification_setting(request: dict):
+    """
+    Update AI classification setting.
+    
+    Body: {"use_ai_classification": true/false}
+    """
+    try:
+        import os
+        from dotenv import set_key, find_dotenv
+        from pathlib import Path
+        
+        use_ai = request.get("use_ai_classification", False)
+        
+        # Find .env file
+        env_file = find_dotenv()
+        if not env_file:
+            # Try common locations
+            possible_paths = [
+                Path(__file__).parent.parent / ".env",
+                Path(__file__).parent / ".env",
+                Path.cwd() / ".env"
+            ]
+            for path in possible_paths:
+                if path.exists():
+                    env_file = str(path)
+                    break
+        
+        if not env_file:
+            return JSONResponse(
+                status_code=500,
+                content={"error": ".env file not found"}
+            )
+        
+        # Update .env file
+        set_key(env_file, "USE_AI_CLASSIFICATION", "true" if use_ai else "false")
+        
+        # Update in current environment
+        os.environ["USE_AI_CLASSIFICATION"] = "true" if use_ai else "false"
+        
+        # Reload the bug_classifier module to pick up new setting
+        import importlib
+        import sys
+        if 'bug_classifier' in sys.modules:
+            importlib.reload(sys.modules['bug_classifier'])
+        
+        return JSONResponse(content={
+            "success": True,
+            "use_ai_classification": use_ai,
+            "message": f"AI classification {'enabled' if use_ai else 'disabled'}. " + 
+                      ("Using AI for bug severity detection." if use_ai else "Using rule-based classification to save API tokens.")
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to update setting: {str(e)}"}
+        )
+
+# ================== END SETTINGS ENDPOINTS ==================
 
 # Competitive Analysis Endpoints
 @app.post("/analyze-competitors")
 async def analyze_competitors(competitor_urls: list[str] = None, depth: str = None, premium: bool = False, ultra: bool = False, professional: bool = False):
     """
-    Analyze competitor sites and generate feature recommendations.
-    
-    Args:
-        competitor_urls: List of competitor URLs (uses COMPETITOR_URLS from .env if not provided)
-        depth: Analysis depth - "basic", "standard", or "deep" (uses COMPETITIVE_ANALYSIS_DEPTH from .env if not provided)
-        premium: Enable comprehensive analysis (UI + SEO + accessibility + tech stack)
-        ultra: Enable ULTRA-COMPREHENSIVE mode - finds EVERY feature difference (colors, fonts, spacing, etc.)
-        professional: Enable PROFESSIONAL mode - detects business features (COD, Try & Buy, delivery options, etc.)
+    Trigger competitive analysis via Celery worker.
     """
     # Determine analysis mode
     if professional:
-        print(f"[INFO] 🎯 PROFESSIONAL mode - Business features (COD, Payment, Delivery, etc.)")
+        print(f"[INFO] 🎯 PROFESSIONAL mode - Business features")
     elif premium:
-        print(f"[INFO] ✨ COMPREHENSIVE mode - UI + SEO + Accessibility + Tech Stack")
+        print(f"[INFO] ✨ COMPREHENSIVE mode")
     else:
-        # Default: Standard is now comprehensive (premium=true for old analyzer)
         premium = True
-        print(f"[INFO] 📊 STANDARD mode - Running comprehensive analysis (UI + SEO + Accessibility)")
-    
-    print(f"[INFO] Competitive analysis requested (premium: {premium}, ultra: {ultra}, professional: {professional})")
+        print(f"[INFO] 📊 STANDARD mode")
     
     # Get competitor URLs from request or environment
     if not competitor_urls:
@@ -269,179 +840,88 @@ async def analyze_competitors(competitor_urls: list[str] = None, depth: str = No
     if not competitor_urls:
         return JSONResponse(
             status_code=400,
-            content={"error": "No competitor URLs provided. Add COMPETITOR_URLS to .env or pass URLs in request body"}
+            content={"error": "No competitor URLs provided."}
         )
     
     # Get depth from request or environment
     if not depth:
         depth = os.getenv("COMPETITIVE_ANALYSIS_DEPTH", "standard")
     
-    # Validate depth
-    if depth not in ["basic", "standard", "deep"]:
-        return JSONResponse(
-            status_code=400,
-            content={"error": f"Invalid depth '{depth}'. Must be 'basic', 'standard', or 'deep'"}
-        )
-    
-    # Check if enabled
-    if not os.getenv("ENABLE_COMPETITIVE_ANALYSIS", "true").lower() == "true":
-        return JSONResponse(
-            status_code=403,
-            content={"error": "Competitive analysis is disabled. Set ENABLE_COMPETITIVE_ANALYSIS=true in .env"}
-        )
-    
-    # Check if premium is enabled
-    if premium and not os.getenv("ENABLE_PREMIUM_ANALYSIS", "true").lower() == "true":
-        return JSONResponse(
-            status_code=403,
-            content={"error": "Premium analysis is disabled. Set ENABLE_PREMIUM_ANALYSIS=true in .env"}
-        )
-    
     own_site_url = os.getenv("WEBSITE_URL")
     if not own_site_url:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "WEBSITE_URL not configured in .env"}
-        )
+        return JSONResponse(status_code=400, content={"error": "WEBSITE_URL not configured"})
+
+    print(f"[INFO] Queuing competitive analysis task...")
+    task = task_analyze_competitors.delay(
+        own_site_url, competitor_urls, depth, premium, ultra, professional
+    )
+    track_task(task.id, f"Competitive Analysis ({'Professional' if professional else 'Standard'})")
     
-    try:
-        # Declare global at the start
-        global competitive_analysis_results
-        
-        # PROFESSIONAL MODE - Business Features (COD, Try & Buy, etc.)
-        if professional:
-            print(f"[INFO] 🎯 PROFESSIONAL MODE ENABLED")
-            print(f"[INFO] Detecting business features: COD, Try & Buy, delivery options, payment methods...")
+    return JSONResponse(content={
+        "status": "queued",
+        "task_id": task.id,
+        "message": "Competitive analysis started in background"
+    })
+
+@app.get("/tasks")
+async def list_recent_tasks():
+    """List recent trackable tasks with their statuses."""
+    from celery.result import AsyncResult
+    results = []
+    
+    for task_info in task_history:
+        res = AsyncResult(task_info["id"], app=celery_app)
+        results.append({
+            "id": task_info["id"],
+            "name": task_info["name"],
+            "timestamp": task_info["timestamp"],
+            "status": res.status,
+            "ready": res.ready()
+        })
+    
+    return JSONResponse(content={"tasks": results})
+
+@app.get("/tasks/{task_id}")
+async def get_task_status(task_id: str):
+    """Check status of a Celery task."""
+    from celery.result import AsyncResult
+    res = AsyncResult(task_id, app=celery_app)
+    
+    return JSONResponse(content={
+        "task_id": task_id,
+        "status": res.status,
+        "ready": res.ready(),
+        "info": str(res.info) if not res.ready() else None
+    })
+
+@app.get("/tasks/{task_id}/result")
+async def get_task_result(task_id: str):
+    """Retrieve result of a completed Celery task."""
+    from celery.result import AsyncResult
+    res = AsyncResult(task_id, app=celery_app)
+    
+    if not res.ready():
+        return JSONResponse(status_code=202, content={"status": res.status, "message": "Task not ready"})
+    
+    if res.failed():
+        return JSONResponse(status_code=500, content={"status": "FAILED", "error": str(res.result)})
+    
+    # For competitive analysis, results are stored in a file
+    result_data = res.result
+    if isinstance(result_data, dict) and "result_file" in result_data:
+        import json
+        file_path = result_data["result_file"]
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                analysis_result = json.load(f)
             
-            from professional_competitive_analyzer import professional_analyzer
-            analysis = await professional_analyzer.analyze_competitors_professional(own_site_url, competitor_urls)
+            # Update global for backward compatibility with /feature-recommendations
+            global competitive_analysis_results
+            competitive_analysis_results = analysis_result
             
-            # Convert professional analysis format to match frontend expectations
-            # UI expects: id, name, category, description, found_in, frequency, frequency_percentage,
-            #             complexity, priority_score, estimated_effort, business_impact, implementation_notes
+            return JSONResponse(content=analysis_result)
             
-            feature_gaps_for_ui = []
-            for idx, gap in enumerate(analysis.get("all_gaps", []), 1):
-                # Generate UI-compatible format
-                competitor_count = gap.get("competitor_count", 0)
-                total_competitors = len(competitor_urls)
-                frequency_percentage = f"{int((competitor_count / total_competitors) * 100)}%" if total_competitors > 0 else "0%"
-                
-                # Map priority_score (0-100) to priority_score (0-10) for UI
-                priority_score_100 = gap.get("priority_score", 50)
-                priority_score_10 = int(priority_score_100 / 10)
-                
-                # Determine complexity and effort
-                complexity = "medium"  # Default
-                estimated_effort = "Medium"
-                if priority_score_100 >= 85:
-                    estimated_effort = "High"
-                    complexity = "high"
-                elif priority_score_100 <= 60:
-                    estimated_effort = "Low"
-                    complexity = "low"
-                
-                # Determine business impact
-                business_impact = "high" if priority_score_100 >= 80 else "medium" if priority_score_100 >= 60 else "low"
-                
-                # Generate description
-                description = f"{gap.get('category', 'Feature')} feature found in {competitor_count} out of {total_competitors} competitors"
-                
-                # Implementation notes
-                evidence_summary = ". ".join(gap.get("evidence", [])[:2])
-                implementation_notes = f"Competitors: {', '.join([url.split('//')[1].split('/')[0] for url in gap.get('competitors_with', [])])}. Evidence: {evidence_summary[:150]}"
-                
-                feature_gaps_for_ui.append({
-                    "id": f"gap_{idx}",
-                    "name": gap.get("feature_name", "Unknown Feature"),
-                    "category": gap.get("category", "General"),
-                    "description": description,
-                    "found_in": [url.split("//")[1].split("/")[0] for url in gap.get("competitors_with", [])],
-                    "frequency": f"{competitor_count}/{total_competitors}",
-                    "frequency_percentage": frequency_percentage,
-                    "complexity": complexity,
-                    "priority_score": priority_score_10,
-                    "estimated_effort": estimated_effort,
-                    "business_impact": business_impact,
-                    "implementation_notes": implementation_notes
-                })
-            
-            # Store analysis globally for /feature-recommendations endpoint
-            competitive_analysis_results = {
-                "analysis_date": analysis["analyzed_at"],
-                "feature_gaps": feature_gaps_for_ui,
-                "summary": {
-                    "total_competitors": len(competitor_urls),
-                    "total_gaps": analysis["total_gaps"],
-                    "high_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] >= 7]),
-                    "medium_priority": len([g for g in feature_gaps_for_ui if 4 <= g["priority_score"] < 7]),
-                    "low_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] < 4])
-                },
-                "analysis_type": "professional"
-            }
-            
-            return JSONResponse(content={
-                "status": "success",
-                "analysis_type": "professional",
-                "total_gaps": analysis["total_gaps"],
-                "high_priority": len([g for g in feature_gaps_for_ui if g["priority_score"] >= 7]),
-                "gaps_by_category": analysis["gaps_by_category"],
-                "high_priority_gaps": [g for g in feature_gaps_for_ui if g["priority_score"] >= 7],
-                "feature_gaps": feature_gaps_for_ui,  # Include for UI
-                "recommendations": analysis["recommendations"],
-                "summary": competitive_analysis_results["summary"],
-                "message": f"✅ Found {analysis['total_gaps']} business feature gaps using PROFESSIONAL analysis"
-            })
-        
-        # ULTRA-COMPREHENSIVE MODE - Finds EVERY difference
-        if ultra:
-            print(f"[INFO] 🚀 ULTRA-COMPREHENSIVE MODE ENABLED")
-            print(f"[INFO] This will detect EVERY feature difference including colors, fonts, spacing, etc.")
-            
-            from ultra_comprehensive_analyzer import ultra_analyzer
-            analysis = await ultra_analyzer.analyze_ultra_comprehensive(own_site_url, competitor_urls)
-            
-            # Store analysis globally for /feature-recommendations endpoint
-            # Convert ultra-comprehensive format to match frontend expectations
-            competitive_analysis_results = {
-                "analysis_date": datetime.now().isoformat(),
-                "feature_gaps": analysis["feature_gaps"],
-                "summary": {
-                    "total_competitors": len(competitor_urls),
-                    "total_gaps": analysis["total_gaps_found"],
-                    "high_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") in ["critical", "high"]]),
-                    "medium_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") == "medium"]),
-                    "low_priority": len([g for g in analysis["feature_gaps"] if g.get("priority") == "low"])
-                },
-                "analysis_type": "ultra_comprehensive"
-            }
-            
-            return JSONResponse(content={
-                "status": "success",
-                "analysis_type": "ultra_comprehensive",
-                "total_features_found": analysis["total_gaps_found"],
-                "recommendations": analysis["feature_gaps"],
-                "message": f"✅ Found {analysis['total_gaps_found']} feature gaps using ULTRA-COMPREHENSIVE analysis"
-            })
-        
-        # Standard analysis
-        from competitive_analyzer import CompetitiveAnalyzer
-        analyzer = CompetitiveAnalyzer(depth=depth)
-        
-        print(f"[INFO] Starting competitive analysis with depth: {depth}, premium: {premium}")
-        analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls, premium=premium)
-        
-        # Store analysis globally for /feature-recommendations endpoint
-        competitive_analysis_results = analysis
-        
-        return JSONResponse(content=analysis)
-        
-    except Exception as e:
-        print(f"[ERROR] Competitive analysis failed: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Competitive analysis failed: {str(e)}"}
-        )
+    return JSONResponse(content={"status": "completed", "result": res.result})
 
 @app.get("/feature-recommendations")
 async def get_feature_recommendations():
@@ -901,20 +1381,22 @@ def perform_manual_rollback():
 
 def start_enhanced_maintenance_cycle():
     """
-    Enhanced maintenance cycle with comprehensive safety features:
-    - Pre-change rollback checks
-    - Validation of all generated code
-    - Post-change monitoring
-    - Automatic rollback protection
+    Refactored maintenance cycle - Detection and Classification Only.
+    
+    New Architecture:
+    1. Detect bugs through analysis
+    2. Classify bugs by severity (Critical/High/Medium/Low)
+    3. Add bugs to queue for processing via chatbot pipeline
+    4. Auto-approve and execute non-critical bugs silently
+    5. Notify users only for critical/high severity issues
     """
     log_stream = QueueLogStream(log_streamer)
     with contextlib.redirect_stdout(log_stream):
         try:
             print(f"[INFO] ==========================================")
-            print(f"[INFO] Starting ENHANCED maintenance cycle at {datetime.now()}")
+            print(f"[INFO] Starting Intelligent Maintenance Cycle at {datetime.now()}")
             print(f"[INFO] Website: {os.getenv('WEBSITE_URL')}")
-            print(f"[INFO] Monitoring Mode: {os.getenv('MONITORING_MODE', 'simple')}")
-            print(f"[INFO] Safety Features: Validation + Rollback Protection")
+            print(f"[INFO] Mode: Detection → Classification → Queue Processing")
             print(f"[INFO] ==========================================")
             
             # PHASE 1: PRE-CHANGE SAFETY CHECKS
@@ -929,7 +1411,7 @@ def start_enhanced_maintenance_cycle():
             else:
                 print(f"[SUCCESS] Site data collected from sources: {site_data.get('data_sources', ['unknown'])}")
             
-            # Step 2: Check if rollback is needed BEFORE making new changes
+            # Step 2: Check if rollback is needed BEFORE detecting new issues
             print("[INFO] Step 2: Checking if rollback is needed...")
             rollback_result = rollback_manager.perform_rollback_if_needed(site_data)
             
@@ -937,12 +1419,12 @@ def start_enhanced_maintenance_cycle():
                 print(f"[ROLLBACK] Automatic rollback performed: {rollback_result.get('pr_url')}")
                 health_status["last_rollback"] = datetime.now().isoformat()
                 health_status["last_error"] = f"Auto-rollback: {rollback_result.get('reason')}"
-                return  # Skip normal maintenance cycle
+                return  # Skip bug detection after rollback
             else:
-                print("[INFO] No rollback needed, proceeding with maintenance...")
+                print("[INFO] No rollback needed, proceeding with bug detection...")
             
-            # PHASE 2: ANALYSIS AND CODE GENERATION
-            print("[INFO] Phase 2: Analysis and safe code generation...")
+            # PHASE 2: BUG DETECTION (unchanged)
+            print("[INFO] Phase 2: Bug detection and analysis...")
             
             # Step 3: Get repository files
             print("[INFO] Step 3: Accessing repository files...")
@@ -954,71 +1436,96 @@ def start_enhanced_maintenance_cycle():
                 health_status["last_error"] = f"Repository access failed: {str(e)}"
                 return
             
-            # Step 4: Analyze data for issues
-            print("[INFO] Step 4: Analyzing data for improvement opportunities...")
+            # Step 4: Analyze data for bugs
+            print("[INFO] Step 4: Analyzing for bugs and issues...")
             
             # Get URL and local repo path for bug detection
             url = os.getenv("WEBSITE_URL")
             repo_path = clone_or_pull_repo()
             
-            issues = asyncio.run(analyze_data(site_data, repo_files, url, repo_path))
+            bugs = asyncio.run(analyze_data(site_data, repo_files, url, repo_path))
 
             global detected_issues
-            detected_issues = issues
+            detected_issues = bugs
             
-            if issues:
-                print(f"[SUCCESS] Detected {len(issues)} improvement opportunities:")
-                for i, issue in enumerate(issues, 1):
-                    print(f"[INFO] Issue {i}: {issue.get('type', 'unknown')} - {issue.get('description', 'no description')[:100]}...")
+            if not bugs:
+                print("[INFO] ✅ No bugs detected - website appears healthy!")
+                print(f"[INFO] Maintenance cycle completed at {datetime.now()}")
+                print(f"[INFO] ==========================================")
+                return
             
-            # Step 5: Generate and validate fixes
-            if issues:
-                print("[INFO] Step 5: Generating and validating code fixes...")
-                print(f"[INFO] All fixes will be validated for safety before application...")
-                
-                # This calls prepare_fixes which now includes validation and testing
-                # Pass repo_path for improved fixer if available
-                print("[INFO] Testing fixes in isolated environment before applying...")
-                fixes = asyncio.run(prepare_fixes(issues, repo_path=repo_path))
-                
-                if fixes:
-                    print(f"[SUCCESS] Generated and validated {len(fixes)} safe code fixes")
-                    
-                    # PHASE 3: SAFE APPLICATION OF CHANGES
-                    print("[INFO] Phase 3: Safely applying validated changes...")
-                    
-                    # Step 6: Submit PR with validated fixes
-                    print("[INFO] Step 6: Creating pull request with validated fixes...")
-                    pr_url = submit_fix_pr(fixes)
-                    
-                    if pr_url:
-                        print(f"[SUCCESS] Created PR: {pr_url}")
-                        health_status["last_pr"] = pr_url
-                        health_status["last_error"] = None  # Clear previous errors
-                        
-                        # Record change for potential future rollback
-                        change_id = rollback_manager.record_change(
-                            pr_url=pr_url,
-                            notes=f"AI maintenance cycle - {len(fixes)} validated fixes applied"
-                        )
-                        print(f"[INFO] Change recorded for rollback protection: ID {change_id}")
-                        
-                    else:
-                        print("[WARNING] PR creation failed")
-                        health_status["last_error"] = "PR creation failed"
-                else:
-                    print("[INFO] No safe fixes could be generated/validated from detected issues")
+            print(f"[SUCCESS] Detected {len(bugs)} bugs/issues")
+            for i, bug in enumerate(bugs, 1):
+                print(f"[INFO] Bug {i}: {bug.get('type', 'unknown')} - {bug.get('description', 'no description')[:100]}...")
+            
+            # PHASE 3: NEW - BUG CLASSIFICATION AND ROUTING
+            print("[INFO] Phase 3: Classifying bugs by severity...")
+            
+            from bug_classifier import bug_classifier
+            from bug_queue_manager import bug_queue_manager
+            
+            # Classify bugs by severity
+            classified_bugs = bug_classifier.classify_bugs(bugs)
+            
+            # CONSOLIDATE SIMILAR BUGS before queuing
+            from bug_consolidator import bug_consolidator
+            
+            # Flatten classified bugs for consolidation
+            all_classified = []
+            for severity, bugs_list in classified_bugs.items():
+                for bug in bugs_list:
+                    bug["severity"] = severity  # Ensure severity is set
+                    all_classified.append(bug)
+            
+            print(f"[MAINTENANCE] Before consolidation: {len(all_classified)} bugs")
+            consolidated_bugs = bug_consolidator.consolidate(all_classified)
+            print(f"[MAINTENANCE] After consolidation: {len(consolidated_bugs)} bugs")
+            
+            # Re-classify consolidated bugs
+            reclassified = {"critical": [], "high": [], "medium": [], "low": []}
+            for bug in consolidated_bugs:
+                severity = bug.get("severity", "medium")
+                reclassified[severity].append(bug)
+            
+            # Add consolidated bugs to detected list (awaiting approval)
+            print("[INFO] Phase 4: Adding bugs to detected list...")
+            queue_result = bug_queue_manager.add_detected_bugs(reclassified)
+            
+            # Summary of classification (now based on reclassified bugs)
+            critical_count = len(reclassified["critical"])
+            high_count = len(reclassified["high"])
+            medium_count = len(reclassified["medium"])
+            low_count = len(reclassified["low"])
+            
+            print(f"[INFO] Classification Results:")
+            print(f"[INFO]   🔴 CRITICAL: {critical_count} (require user approval)")
+            print(f"[INFO]   🟠 HIGH: {high_count} (require user approval)")
+            print(f"[INFO]   🟡 MEDIUM: {medium_count} (require user approval)")
+            print(f"[INFO]   🟢 LOW: {low_count} (require user approval)")
+            
+            print(f"[SUCCESS] Added {queue_result['total_added']} bugs to queue")
+            print(f"[INFO] Current queue size: {queue_result['queue_size']}")
+            print(f"[INFO] Currently processing: {queue_result['processing_count']}")
+            
+            # Update health status
+            health_status["last_error"] = None
+            health_status["bugs_detected"] = len(bugs)
+            health_status["bugs_queued"] = queue_result['total_added']
+            
+            # Notify user only about critical/high severity bugs
+            user_attention_count = critical_count + high_count
+            if user_attention_count > 0:
+                print(f"[INFO] ⚠️  {user_attention_count} bug(s) require user attention")
+                print(f"[INFO] User will be notified via dashboard")
             else:
-                print("[INFO] No improvement opportunities detected - website appears to be running well!")
+                print(f"[INFO] ✅ All bugs will be auto-fixed in background")
             
-            print(f"[INFO] Enhanced maintenance cycle completed successfully at {datetime.now()}")
+            print(f"[INFO] Maintenance cycle completed successfully at {datetime.now()}")
+            print(f"[INFO] Queue processor will handle bug fixes via chatbot pipeline")
             print(f"[INFO] ==========================================")
             
-            # Save validation log for audit
-            code_validator.save_validation_log()
-            
         except Exception as e:
-            error_msg = f"Enhanced maintenance cycle failed: {str(e)}"
+            error_msg = f"Maintenance cycle failed: {str(e)}"
             print(f"[ERROR] {error_msg}")
             health_status["last_error"] = str(e)
             

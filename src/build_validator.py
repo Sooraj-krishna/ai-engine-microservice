@@ -14,6 +14,7 @@ import os
 import re
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
+from framework_validator import framework_validator
 
 
 class BuildValidator:
@@ -102,6 +103,13 @@ class BuildValidator:
         # Check for orphaned components (created but never imported)
         orphan_issues = self._check_orphaned_components(generated_files)
         issues.extend(orphan_issues)
+        
+        # --- Framework-Specific Validation ---
+        print("[BUILD_VALIDATOR] Running framework-specific validation...")
+        framework_issues = framework_validator.validate_framework_rules(generated_files, repo_path)
+        if framework_issues:
+            print(f"[BUILD_VALIDATOR] ⚠️ Found {len(framework_issues)} framework-specific issues")
+            issues.extend(framework_issues)
         
         return {
             'valid': len(issues) == 0,
