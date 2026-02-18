@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, X, MessageCircle, Check, XCircle, RefreshCw } from 'lucide-react';
+import { Send, X, MessageCircle, Check, XCircle, RefreshCw, ChevronDown } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -194,81 +194,93 @@ export function ChatWidget({
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-red-600 hover:to-red-500 text-white rounded-full shadow-2xl shadow-cyan-950/50 hover:shadow-cyan-900/50 transition-all duration-300 flex items-center justify-center hover:scale-110 z-40"
+          className="fixed bottom-6 right-6 bg-white api-border backdrop-blur-md text-black p-4 rounded-full shadow-lg transition-all transform hover:scale-105 border border-white/20 flex items-center justify-center z-40 group"
           aria-label="Open AI Chat"
         >
-          <MessageCircle className="w-7 h-7" />
+          <MessageCircle className="h-6 w-6 group-hover:scale-110 transition-transform" />
         </button>
       )}
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-zinc-950 rounded-lg shadow-2xl shadow-cyan-950/50 flex flex-col z-40 border border-cyan-900/30">
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-black/80 backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col z-40 border border-white/10 overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-cyan-900/30 bg-gradient-to-r from-cyan-600 to-teal-500 text-white rounded-t-lg">
+          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-5 h-5" />
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold uppercase tracking-wider">AI Assistant</h3>
-                <p className="text-xs opacity-75">
+                <h3 className="font-bold uppercase tracking-wider text-white text-sm">AI Assistant</h3>
+                <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">
                   {sessionId ? `Session: ${sessionId.slice(0, 8)}` : 'New conversation'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="hover:bg-white/20 p-2 rounded-lg transition-colors"
+              className="hover:bg-white/10 p-2 rounded-lg transition-colors text-white/60 hover:text-white"
               aria-label="Close chat"
             >
-              <X className="w-5 h-5" />
+              <ChevronDown className="w-5 h-5" />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             {messages.length === 0 && (
-              <div className="text-center text-zinc-500 mt-8">
-                <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-zinc-400 font-bold uppercase tracking-wider text-sm">Start a Conversation</p>
-                <p className="text-xs mt-2 text-zinc-600">Try: "Implement a new feature"</p>
+              <div className="text-center mt-8 space-y-4">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/10">
+                  <MessageCircle className="w-8 h-8 text-white/40" />
+                </div>
+                <div>
+                  <p className="text-white font-bold uppercase tracking-wider text-sm">Start a Conversation</p>
+                  <p className="text-xs mt-2 text-white/40">Analyzing your codebase...</p>
+                </div>
+                <div className="grid gap-2 px-4">
+                    <button onClick={() => setInput("Check for pending bugs?")} className="text-xs p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/60 hover:text-white transition-all text-left">
+                        Check for pending bugs?
+                    </button>
+                    <button onClick={() => setInput("Analyze performance issues")} className="text-xs p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/60 hover:text-white transition-all text-left">
+                        Analyze performance issues
+                    </button>
+                </div>
               </div>
             )}
 
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-lg shadow-cyan-950/50'
+                      ? 'bg-white text-black font-medium'
                       : msg.role === 'system'
-                      ? 'bg-yellow-950/30 text-yellow-400 border border-yellow-800/50'
-                      : 'bg-zinc-900 text-zinc-100 border border-zinc-800 shadow-lg'
+                      ? 'bg-red-500/10 text-red-200 border border-red-500/20'
+                      : 'bg-white/10 text-white border border-white/5'
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
                   
                   {/* Show approval buttons if plan requires it */}
                   {msg.metadata?.requires_approval && msg.metadata?.plan_id && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => approvePlan(msg.metadata!.plan_id!)}
                         disabled={isLoading}
-                        className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         Approve
                       </button>
                       <button
                         onClick={() => rejectPlan(msg.metadata!.plan_id!)}
                         disabled={isLoading}
-                        className="flex items-center gap-1 px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
                       >
-                        <XCircle className="w-4 h-4" />
+                        <XCircle className="w-3.5 h-3.5" />
                         Reject
                       </button>
                     </div>
@@ -280,9 +292,10 @@ export function ChatWidget({
                       href={msg.metadata.pr_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs underline opacity-75 hover:opacity-100"
+                      className="mt-2 flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-medium"
                     >
-                      View Pull Request →
+                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      View Pull Request
                     </a>
                   )}
                 </div>
@@ -291,11 +304,11 @@ export function ChatWidget({
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-zinc-900 rounded-lg px-4 py-3 border border-zinc-800">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="bg-white/5 rounded-2xl px-4 py-3 border border-white/5">
+                  <div className="flex gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -305,24 +318,24 @@ export function ChatWidget({
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-cyan-900/30 bg-zinc-950">
-            <div className="flex gap-2">
+          <div className="p-4 border-t border-white/10 bg-black/40 backdrop-blur-md">
+            <div className="flex gap-2 relative">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder="Ask me anything..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-cyan-600 placeholder:text-zinc-600 disabled:opacity-50"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white rounded-xl focus:outline-none focus:bg-white/10 focus:border-white/20 placeholder:text-white/30 disabled:opacity-50 text-sm transition-all pr-12"
               />
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}
-                className="px-4 py-3 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-red-600 hover:to-red-500 text-white rounded-lg hover:shadow-lg shadow-cyan-950/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-2 top-2 bottom-2 aspect-square flex items-center justify-center bg-white text-black rounded-lg hover:bg-gray-200 transition-all font-bold disabled:opacity-0 disabled:cursor-not-allowed shadow-lg"
                 aria-label="Send message"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>

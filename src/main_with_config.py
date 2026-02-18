@@ -129,8 +129,11 @@ detected_issues = []
 # rollback_manager = RollbackManager() # This line is removed as rollback_manager is now imported directly
 code_validator = CodeValidator()
 
-@app.get("/")
-def root():
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+
+@app.get("/api")
+def api_root():
     """Main status endpoint for load balancer health checks."""
     return {
         "status": "AI Engine running", 
@@ -140,6 +143,9 @@ def root():
         "monitoring_mode": os.getenv("MONITORING_MODE", "simple"),
         "safety_features": health_status["safety_features"]
     }
+
+
+
 
 @app.get("/health")
 def health_check():
@@ -1843,6 +1849,25 @@ def test_dependencies():
     
     results["all_healthy"] = results["github_api"] and results["gemini_api"]
     return results
+
+# Mount static files if the directory exists (Production mode)
+# IMPORTANT: This must be the LAST route defined to avoid shadowing API endpoints
+ui_dist_path = Path("/app/ui_dist")
+if ui_dist_path.exists():
+    print(f"[INFO] Mounting static files from {ui_dist_path}")
+    
+    # Mount static assets
+    app.mount("/", StaticFiles(directory=str(ui_dist_path), html=True), name="ui")
+
+    # SPA Fallback for 404s (Let frontend handle routing)
+    @app.exception_handler(404)
+    async def custom_404_handler(request, exc):
+        # Only for GET requests that accept HTML
+        if request.method == "GET" and "text/html" in request.headers.get("accept", ""):
+            index_path = ui_dist_path / "index.html"
+            if index_path.exists():
+                return HTMLResponse(content=index_path.read_text(), status_code=200)
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
 if __name__ == "__main__":
     print("[INFO] Starting Enhanced AI Engine Microservice with Safety Features...")
