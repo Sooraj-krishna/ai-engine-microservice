@@ -306,7 +306,6 @@ You receive easy-to-read monthly reports showing:
 
 **The Timing is Perfect**: AI technology is ready, developers are expensive, and non-technical website owners are looking for better solutions.
 
-**We Need Your Help**: With $250-500K in seed funding, we can reach 400+ customers in Year 1, generating $720K ARR and positioning for rapid growth.
 
 ---
 
