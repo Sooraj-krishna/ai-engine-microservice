@@ -164,7 +164,20 @@ graph TD
 - Creates rollback PRs if issues detected
 - Maintains audit trail
 
-### 6. API & UI Layer
+### 6. Redis & Caching Layer
+
+#### Celery/Redis (`celery_app.py`)
+
+**Purpose**: Asynchronous task processing and state management
+
+**Functions**:
+
+- **Task Broker**: Manages background job queue
+- **Result Backend**: Stores task results
+- **Pub/Sub**: Real-time log streaming
+- **Cache**: Stores expensive API responses and AI results
+
+### 7. API & UI Layer
 
 #### FastAPI Server (`main_with_config.py`)
 

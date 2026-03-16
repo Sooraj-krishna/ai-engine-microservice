@@ -9,7 +9,7 @@ interface BugReportProps {
 const getBugIcon = (type: string) => {
   switch (type) {
     case 'Deployment Configuration Error':
-      return <ServerCrash className="h-5 w-5 text-red-500" />;
+      return <ServerCrash className="h-5 w-5 text-cyan-400" />;
     case 'Broken or Missing Static Assets':
       return <FileText className="h-5 w-5 text-yellow-500" />;
     case 'Data Persistence and State Management Error':

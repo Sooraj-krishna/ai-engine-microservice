@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Roboto+Condensed:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap");
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -9,71 +11,385 @@
   --font-mono: var(--font-geist-mono);
 }
 
-
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    /* Invento26-inspired Dark Theme Colors */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 348 83% 47%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 271 81% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 348 83% 47%;
+    --chart-1: 348 83% 47%;
+    --chart-2: 271 81% 66%;
+    --chart-3: 0 0% 100%;
+    --chart-4: 0 0% 60%;
+    --chart-5: 0 0% 30%;
     --radius: 0.5rem;
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
 }
-
-
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-black text-foreground;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
   }
+
+  /* Cyber Grid Background */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+      linear-gradient(90deg, rgba(0, 206, 209, 0.05) 1px, transparent 1px),
+      linear-gradient(rgba(0, 206, 209, 0.05) 1px, transparent 1px),
+      radial-gradient(
+        circle at 50% 0%,
+        rgba(0, 206, 209, 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        rgba(0, 139, 139, 0.1) 0%,
+        transparent 50%
+      );
+    background-size:
+      80px 80px,
+      80px 80px,
+      100% 100%,
+      100% 100%;
+    background-position:
+      0 0,
+      0 0,
+      center,
+      bottom right;
+    pointer-events: none;
+    z-index: 0;
+    animation: gridSlide 20s linear infinite;
+  }
+
+  @keyframes gridSlide {
+    0% {
+      background-position:
+        0 0,
+        0 0,
+        center,
+        bottom right;
+    }
+    100% {
+      background-position:
+        80px 80px,
+        80px 80px,
+        center,
+        bottom right;
+    }
+  }
+
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family:
+      "Bebas Neue",
+      "Roboto Condensed",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    letter-spacing: 0.1em;
+  }
+  h2 {
+    letter-spacing: 0.08em;
+  }
+}
+
+@layer components {
+  /* Glassmorphic card matching hero theme */
+  .dark-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl;
+  }
+
+  .dark-card:hover {
+    @apply border-white/20 bg-white/[0.08];
+  }
+
+  /* Primary white button */
+  .red-button {
+    @apply bg-white text-black
+           hover:bg-gray-100
+           font-bold uppercase tracking-wider
+           transition-all duration-200 
+           shadow-lg shadow-white/10
+           hover:shadow-xl hover:shadow-white/20
+           border-none rounded-full
+           px-8 py-3;
+  }
+
+  .red-button:active {
+    @apply scale-95;
+  }
+
+  /* Secondary outline button */
+  .dark-button {
+    @apply bg-transparent hover:bg-white/10
+           text-white font-bold uppercase tracking-wider
+           transition-all duration-200
+           border border-white/20 hover:border-white/30
+           shadow-lg hover:shadow-xl
+           rounded-full px-6 py-2.5;
+  }
+
+  /* Terminal-style display */
+  .terminal-display {
+    @apply bg-black/80 backdrop-blur-sm 
+           border border-cyan-900/40
+           font-mono text-sm
+           shadow-inner;
+    background-image:
+      linear-gradient(rgba(0, 255, 0, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 0, 0.02) 1px, transparent 1px);
+    background-size: 2px 2px;
+  }
+
+  /* Status badge */
+  .status-badge {
+    @apply inline-flex items-center px-3 py-1 
+           text-xs font-bold uppercase tracking-wider
+           border rounded-lg;
+  }
+
+  .status-badge.online {
+    @apply bg-green-950/50 text-green-400 border-green-800/50;
+  }
+
+  .status-badge.error {
+    @apply bg-cyan-950/50 text-cyan-400 border-cyan-800/50;
+  }
+
+  .status-badge.warning {
+    @apply bg-yellow-950/50 text-yellow-400 border-yellow-800/50;
+  }
+
+  .status-badge.info {
+    @apply bg-blue-950/50 text-blue-400 border-blue-800/50;
+  }
+
+  /* Tech tag (purple accent like Invento26) */
+  .tech-tag {
+    @apply inline-flex items-center px-3 py-1
+           bg-purple-600/90 text-white
+           text-xs font-bold uppercase tracking-wider
+           rounded-lg;
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Red accent border */
+  .red-accent-border {
+    @apply border-l-4 border-l-red-600;
+  }
+
+  /* Halftone effect overlay */
+  .halftone-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .halftone-overlay::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 4px 4px;
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .text-red-gradient {
+    @apply bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent;
+  }
+
+  .text-shadow-glow {
+    text-shadow: 0 0 20px rgba(190, 30, 45, 0.5);
+  }
+
+  /* Floating particle effect */
+  .animate-float-particle {
+    animation: floatParticle 8s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+}
+
+/* Keyframe Animations */
+@keyframes floatParticle {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(100px, -500px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Floating Particles Animation */
+@keyframes floatingParticles {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+/* Additional cyber effect - scanline */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 206, 209, 0.03) 0px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(190, 30, 45, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(190, 30, 45, 0.6);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffffff33;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff55;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* Dot Grid Background Pattern */
+.bg-dot-grid {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 0, 0, 0.15) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+/* Page Transition Effect */
+@keyframes pageTransition {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.page-enter {
+  animation: pageTransition 0.3s ease-in-out;
 }

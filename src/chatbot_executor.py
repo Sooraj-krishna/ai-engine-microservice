@@ -1,0 +1,386 @@
+"""
+Chatbot Executor
+
+Executes approved changes by coordinating with existing AI Engine systems.
+Integrates with bug detection, feature implementation, competitive analysis, etc.
+"""
+
+import os
+import asyncio
+import json
+from typing import Dict, List, Optional
+from datetime import datetime
+from canary_tester import canary_tester
+from notification_service import notification_service
+
+
+class ChatbotExecutor:
+    """Executes approved changes and integrates with existing systems."""
+    
+    def __init__(self):
+        self.execution_history = []
+    
+    async def execute_change(self, change_data: Dict) -> Dict:
+        """
+        Execute an approved change.
+        
+        Args:
+            change_data: Change data including plan and intent
+            
+        Returns:
+            Execution result
+        """
+        plan = change_data.get("plan", {})
+        intent = change_data.get("intent")
+        change_id = change_data.get("change_id")
+        
+        print(f"[EXECUTOR] Executing change {change_id} with intent: {intent}")
+        
+        try:
+            if intent == "bug_fix":
+                result = await self._execute_bug_fix(plan, change_data)
+            elif intent == "feature_request":
+                result = await self._execute_feature_request(plan, change_data)
+            elif intent == "ui_change":
+                result = await self._execute_ui_change(plan, change_data)
+            elif intent == "competitive_analysis":
+                result = await self._execute_competitive_analysis(plan, change_data)
+            else:
+                result = {
+                    "success": False,
+                    "error": f"Unknown intent: {intent}",
+                    "message": "I don't know how to execute this type of change yet."
+                }
+            
+            # Record execution
+            self.execution_history.append({
+                "change_id": change_id,
+                "intent": intent,
+                "executed_at": datetime.now().isoformat(),
+                "result": result
+            })
+            
+            return result
+            
+        except Exception as e:
+            print(f"[EXECUTOR] Execution failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Execution failed: {str(e)}"
+            }
+    
+    async def _execute_bug_fix(self, plan: Dict, change_data: Dict) -> Dict:
+        """Execute bug fix using chatbot-generated plan and create PR."""
+        
+        try:
+            from github_handler import clone_or_pull_repo, submit_fix_pr
+            from generator import prepare_fixes
+            
+            print("[EXECUTOR] Executing bug fix from chatbot plan...")
+            
+            # Get bug info from change_data
+            bug = change_data.get("bug")
+            silent = change_data.get("silent", False)
+            
+            if not bug:
+                # Fallback: extract from plan
+                bug = {
+                    "type": plan.get("bug_type", "general_bug"),
+                    "description": plan.get("summary", ""),
+                    "file": plan.get("affected_files", ["unknown"])[0] if plan.get("affected_files") else "unknown"
+                }
+            
+            print(f"[EXECUTOR] Bug type: {bug.get('type')}")
+            print(f"[EXECUTOR] Description: {bug.get('description')[:100]}...")
+            print(f"[EXECUTOR] Silent mode: {silent}")
+            
+            # Get repository path
+            print("[EXECUTOR] Cloning/pulling repository...")
+            repo_path = clone_or_pull_repo()
+            
+            # Use the plan to generate fixes
+            # The plan already contains the implementation steps from chatbot
+            print("[EXECUTOR] Generating fixes from plan...")
+            
+            # Convert plan to fix format that prepare_fixes expects
+            # We'll use the existing prepare_fixes but pass the bug with plan context
+            bug_with_plan = {
+                **bug,
+                "chatbot_plan": plan,
+                "suggested_fix": "\n".join([
+                    f"Step {step['step_number']}: {step['description']}"
+                    for step in plan.get("steps", [])
+                ])
+            }
+            
+            # Generate fixes using existing generator
+            fixes = await prepare_fixes([bug_with_plan], repo_path=repo_path)
+            
+            if not fixes:
+                return {
+                    "success": False,
+                    "error": "No fixes could be generated",
+                    "message": "Failed to generate code fixes from the plan. The bug might be too complex or require manual intervention."
+                }
+            
+            print(f"[EXECUTOR] Generated {len(fixes)} fix(es)")
+            
+            # Create PR with fixes
+            print("[EXECUTOR] Creating pull request...")
+            
+            # Submit PR (title is auto-generated by submit_fix_pr)
+            pr_url = submit_fix_pr(fixes)
+            
+            # PHASE 2: CANARY TESTING (Production Canary)
+            print("[EXECUTOR] Running Canary validation...")
+            target_url = os.getenv("STAGING_URL") or os.getenv("WEBSITE_URL")
+            if target_url:
+                # Try running the default suite first
+                canary_result = await canary_tester.run_test_suite("default_suite", target_url)
+                
+                if not canary_result["success"]:
+                    print(f"[EXECUTOR] ⚠️ Canary suite failed for {target_url}")
+                    await notification_service.notify(
+                        message=f"⚠️ Canary test suite failed for {target_url} during bug fix verification.",
+                        severity="warning",
+                        type="canary_failure",
+                        data={"canary_result": canary_result, "bug": bug}
+                    )
+                    # If it failed, maybe try a basic smoke test as fallback or report errors
+                    if os.getenv("STAGING_URL"):
+                        return {
+                            "success": False,
+                            "error": "Canary test suite failed on staging",
+                            "message": f"PR created but Canary test suite failed. Errors: {canary_result.get('checks', [])}"
+                        }
+                else:
+                    print("[EXECUTOR] ✅ Canary suite validation successful")
+                    await notification_service.notify(
+                        message=f"✅ Canary validation passed for {target_url}",
+                        severity="info",
+                        type="canary_success"
+                    )
+            
+            if pr_url:
+                print(f"[EXECUTOR] ✅ Pull request created: {pr_url}")
+                
+                # Record change for rollback protection
+                try:
+                    from rollback_manager import rollback_manager
+                    change_id = rollback_manager.record_change(
+                        pr_url=pr_url,
+                        notes=f"Auto-fix via chatbot: {bug.get('description', 'Unknown bug')}"
+                    )
+                    print(f"[EXECUTOR] Change recorded for rollback: ID {change_id}")
+                    await notification_service.notify(
+                        message=f"🚀 PR Created: {pr_url}",
+                        severity="success",
+                        type="pr_created",
+                        data={"pr_url": pr_url, "change_id": change_id, "bug": bug}
+                    )
+                except Exception as e:
+                    print(f"[EXECUTOR] Warning: Could not record change for rollback: {e}")
+                
+                return {
+                    "success": True,
+                    "message": f"Bug fix PR created successfully!" if not silent else f"Bug auto-fixed silently!",
+                    "pr_url": pr_url,
+                    "fixes_applied": len(fixes),
+                    "silent": silent,
+                    "severity": bug.get("severity", "unknown")
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "PR creation failed",
+                    "message": "Fixes were generated but could not create pull request. Check GitHub permissions."
+                }
+            
+        except ImportError as e:
+            print(f"[EXECUTOR] Import error: {e}")
+            return {
+                "success": False,
+                "error": f"Required module not available: {e}",
+                "message": "Bug fix system is not fully configured. Please check your setup."
+            }
+        except Exception as e:
+            print(f"[EXECUTOR] Bug fix execution error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Bug fix execution failed: {str(e)}"
+            }
+    
+    async def _execute_feature_request(self, plan: Dict, change_data: Dict) -> Dict:
+        """Execute feature request by integrating with feature implementation manager."""
+        
+        try:
+            from feature_implementation_manager import feature_implementation_manager
+            
+            print("[EXECUTOR] Processing feature request...")
+            
+            # Create a feature record from the plan
+            feature = {
+                "id": plan.get("plan_id"),
+                "name": plan.get("summary"),
+                "description": plan.get("original_request"),
+                "priority_score": 8,  # High priority from chatbot
+                "complexity": plan.get("complexity", "medium"),
+                "estimated_effort": plan.get("estimated_effort", "Medium"),
+                "implementation_notes": "\n".join([
+                    f"{step['step_number']}. {step['description']}"
+                    for step in plan.get("steps", [])
+                ])
+            }
+            
+            # Select feature for implementation
+            result = feature_implementation_manager.select_feature_for_implementation(
+                feature=feature,
+                analysis_results={},
+                generate_plan=False  # We already have a plan from chatbot
+            )
+            
+            # Save our custom plan to file storage
+            plan_file = feature_implementation_manager.implementation_plans_dir / f"{plan['plan_id']}_plan.json"
+            plan_with_metadata = {
+                **plan,
+                "feature_id": plan["plan_id"],
+                "generated_at": datetime.now().isoformat(),
+                "status": "draft",
+                "source": "chatbot"
+            }
+            with open(plan_file, 'w') as f:
+                json.dump(plan_with_metadata, f, indent=2)
+            
+            print(f"[EXECUTOR] Saved implementation plan to {plan_file}")
+            
+            return {
+                "success": True,
+                "message": f"Feature '{plan.get('summary')}' has been queued for implementation. Track progress in the Feature Implementation Status dashboard.",
+                "feature_id": plan.get("plan_id"),
+                "status": result.get("status"),
+                "implementation_plan": plan
+            }
+            
+        except ImportError as e:
+            print(f"[EXECUTOR] Import error: {e}")
+            return {
+                "success": False,
+                "error": "Feature implementation manager not available",
+                "message": "Feature implementation system is not fully configured."
+            }
+        except Exception as e:
+            print(f"[EXECUTOR] Feature request execution error: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Feature implementation failed: {str(e)}"
+            }
+    
+    async def _execute_ui_change(self, plan: Dict, change_data: Dict) -> Dict:
+        """Execute UI change by generating code modifications."""
+        
+        try:
+            from smart_generator import SmartGenerator
+            from github_handler import clone_or_pull_repo
+            
+            print("[EXECUTOR] Processing UI change request...")
+            
+            repo_path = clone_or_pull_repo()
+            generator = SmartGenerator(repo_path)
+            
+            # Extract code from plan
+            code_preview = plan.get("code_preview", {})
+            
+            if not code_preview:
+                return {
+                    "success": False,
+                    "error": "No code preview in plan",
+                    "message": "I couldn't generate code for this UI change. Please provide more details."
+                }
+            
+            # Create a fix-like structure for the generator
+            ui_change = {
+                "file": code_preview.get("filename", ""),
+                "change_type": "ui_modification",
+                "code": code_preview.get("code", ""),
+                "description": plan.get("summary", ""),
+                "language": code_preview.get("language", "css")
+            }
+            
+            return {
+                "success": True,
+                "message": f"UI change planned: {plan.get('summary')}. Code has been generated and is ready for review.",
+                "code_preview": code_preview,
+                "affected_files": plan.get("affected_files", []),
+                "note": "Review the code changes in the pending changes section before applying."
+            }
+            
+        except ImportError as e:
+            print(f"[EXECUTOR] Import error: {e}")
+            return {
+                "success": False,
+                "error": "Code generator not available",
+                "message": "Code generation system is not fully configured."
+            }
+        except Exception as e:
+            print(f"[EXECUTOR] UI change execution error: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"UI change generation failed: {str(e)}"
+            }
+    
+    async def _execute_competitive_analysis(self, plan: Dict, change_data: Dict) -> Dict:
+        """Execute competitive analysis request."""
+        
+        try:
+            from competitive_analyzer import CompetitiveAnalyzer
+            
+            print("[EXECUTOR] Running competitive analysis...")
+            
+            # Get competitor URLs from environment
+            competitor_urls_str = os.getenv("COMPETITOR_URLS", "")
+            competitor_urls = [url.strip() for url in competitor_urls_str.split(",") if url.strip()]
+            
+            if not competitor_urls:
+                return {
+                    "success": False,
+                    "error": "No competitor URLs configured",
+                    "message": "Please configure COMPETITOR_URLS in your .env file to run competitive analysis."
+                }
+            
+            own_site_url = os.getenv("WEBSITE_URL")
+            
+            # Run analysis
+            analyzer = CompetitiveAnalyzer(depth="standard")
+            analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls, premium=True)
+            
+            return {
+                "success": True,
+                "message": f"Competitive analysis complete! Found {analysis.get('summary', {}).get('total_gaps', 0)} feature gaps.",
+                "analysis": analysis,
+                "competitors_analyzed": len(competitor_urls)
+            }
+            
+        except ImportError as e:
+            print(f"[EXECUTOR] Import error: {e}")
+            return {
+                "success": False,
+                "error": "Competitive analyzer not available",
+                "message": "Competitive analysis system is not fully configured."
+            }
+        except Exception as e:
+            print(f"[EXECUTOR] Competitive analysis execution error: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Competitive analysis failed: {str(e)}"
+            }
+
+
+# Global instance
+chatbot_executor = ChatbotExecutor()

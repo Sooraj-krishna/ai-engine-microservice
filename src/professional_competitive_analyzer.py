@@ -204,7 +204,25 @@ class ProfessionalCompetitiveAnalyzer:
             "medium_priority_gaps": [g for g in gaps if 60 <= g['priority_score'] < 80],
             "low_priority_gaps": [g for g in gaps if g['priority_score'] < 60],
             "recommendations": recommendations,
-            "summary": self._generate_summary(gaps, categorized_gaps)
+            "summary": self._generate_summary(gaps, categorized_gaps, len(competitor_urls)),
+            
+            # Frontend Schema Compatibility (Fix for dashboard display)
+            "feature_gaps": [
+                {
+                    "id": f"prof_feature_{i}",
+                    "name": f.feature_name,
+                    "description": f.reasoning,  # Use reasoning as description
+                    "category": f.category,
+                    "priority_score": round(f.priority_score / 10, 1), # Scale 0-100 to 0-10 for UI
+                    "frequency_percentage": f.adoption_rate, # Already formatted string? no, it's "x/y" usually. Let's keep it simple.
+                    "found_in": [], # detailed competitor list might be missing in prioritized object, strictly.
+                    "estimated_effort": f.complexity_estimate, # "High", "Medium", "Low"
+                    "complexity": f.complexity_estimate.lower(),
+                    "business_impact": f.business_impact.lower(),
+                    "implementation_notes": f.recommendation
+                }
+                for i, f in enumerate(prioritized)
+            ]
         }
     
     async def _analyze_single_site(self, url: str) -> List:
@@ -338,7 +356,7 @@ class ProfessionalCompetitiveAnalyzer:
         else:
             return f"Competitive feature in {category} category."
     
-    def _generate_summary(self, gaps: List[Dict], categorized: Dict[str, int]) -> Dict:
+    def _generate_summary(self, gaps: List[Dict], categorized: Dict[str, int], competitor_count: int) -> Dict:
         """Generate executive summary."""
         total_gaps = len(gaps)
         critical_gaps = len([g for g in gaps if g['priority_score'] >= 85])
@@ -349,6 +367,7 @@ class ProfessionalCompetitiveAnalyzer:
         return {
             "total_gaps": total_gaps,
             "critical_gaps": critical_gaps,
+            "total_competitors": competitor_count,
             "top_missing_categories": [
                 {"category": cat, "count": count} 
                 for cat, count in top_categories

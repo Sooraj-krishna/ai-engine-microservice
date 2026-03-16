@@ -1,0 +1,42 @@
+[
+  {
+    "id": "968e6f11-7266-47a2-87d5-23065d558ad4",
+    "feature_name": "Implement a dark mode feature for the website, allowing users to toggle between light and dark themes, with their preference saved locally for persistence across sessions.",
+    "category": null,
+    "priority_score": 8,
+    "estimated_effort": "Medium",
+    "business_impact": null,
+    "selected_at": "2026-01-14T21:04:40.923659",
+    "status": "selected",
+    "implementation_status": "pending",
+    "full_feature_data": {
+      "id": "968e6f11-7266-47a2-87d5-23065d558ad4",
+      "name": "Implement a dark mode feature for the website, allowing users to toggle between light and dark themes, with their preference saved locally for persistence across sessions.",
+      "description": "Add dark mode to my website",
+      "priority_score": 8,
+      "complexity": "medium",
+      "estimated_effort": "Medium",
+      "implementation_notes": "1. Define CSS variables for light and dark themes. This involves creating a set of custom properties (CSS variables) under the `:root` selector for the default (light) theme, and then overriding these variables within a specific class (e.g., `.dark-theme`) that will be applied to the `body` element when dark mode is active.\n2. Update existing component styles to use the newly defined CSS variables. This ensures that all elements on the page will automatically adapt to the current theme.\n3. Add a theme toggle UI element (e.g., a button or switch) to the website's header or a prominent location, allowing users to manually switch between light and dark modes.\n4. Implement JavaScript logic to handle theme switching. This includes toggling the `dark-theme` class on the `body` element, saving the user's preference to `localStorage`, and applying the saved theme on page load to ensure persistence.\n5. Perform comprehensive testing across various browsers (Chrome, Firefox, Safari, Edge) and devices (desktop, tablet, mobile) to ensure the dark mode functionality and styling are consistent and free of visual bugs. Verify that the toggle works, preference persists, and all UI elements are correctly styled in both modes.\n6. Conduct an accessibility review to ensure that the color contrast ratios for text and interactive elements meet WCAG (Web Content Accessibility Guidelines) standards in both light and dark modes.\n7. Deploy the updated HTML, CSS, and JavaScript files to the production server."
+    }
+  },
+  {
+    "id": "fc45c7eb-d50d-4237-b9e7-159c38c77261",
+    "feature_name": "Implement a dark mode feature for the website, allowing users to toggle between light and dark themes and persisting their preference across sessions. This will involve defining CSS variables for colors, creating a theme toggle UI, and adding JavaScript logic to manage theme switching and persistence.",
+    "category": null,
+    "priority_score": 8,
+    "estimated_effort": "Medium",
+    "business_impact": null,
+    "selected_at": "2026-01-14T21:06:54.858208",
+    "status": "selected",
+    "implementation_status": "pending",
+    "full_feature_data": {
+      "id": "fc45c7eb-d50d-4237-b9e7-159c38c77261",
+      "name": "Implement a dark mode feature for the website, allowing users to toggle between light and dark themes and persisting their preference across sessions. This will involve defining CSS variables for colors, creating a theme toggle UI, and adding JavaScript logic to manage theme switching and persistence.",
+      "description": "Add dark mode",
+      "priority_score": 8,
+      "complexity": "medium",
+      "estimated_effort": "Medium",
+      "implementation_notes": "1. Analyze existing CSS structure to identify primary colors, backgrounds, and text colors that need to be themed. Determine the best approach for defining theme-specific styles (e.g., using CSS variables with a `data-theme` attribute on the `html` or `body` element).\n2. Define CSS variables for all relevant colors (backgrounds, text, primary, secondary, borders, etc.) in both light and dark themes. These variables will be used throughout the stylesheet.\n3. Add a theme toggle button or switch to the website's UI (e.g., in the header or navigation bar). This element will trigger the theme change.\n4. Implement JavaScript logic to handle theme switching. This includes detecting the user's system preference, reading/writing theme preference to local storage, and applying the correct theme class/attribute to the `html` element.\n5. Thoroughly test the dark mode implementation across different browsers and devices. Verify that all UI elements are correctly styled in both light and dark modes, the toggle works, and the preference persists.\n6. Deploy the changes to a staging environment for final review, then to production."
+    }
+  }
+]

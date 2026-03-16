@@ -10,7 +10,10 @@ google-auth-oauthlib==1.0.0     # NEW: OAuth for Google APIs
 google-generativeai==0.3.2      # NEW: Google Gemini AI API
 psutil==5.9.0                   # NEW: System metrics monitoring
 GitPython==3.1.41
-playwright==1.40.0
+playwright==1.58.0
 websockets==11.0.3
 wsproto==1.2.0
 beautifulsoup4==4.12.3
+celery==5.3.6
+redis==5.0.1
+python-multipart

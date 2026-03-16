@@ -38,7 +38,7 @@ interface IdentifiedBugsProps {
 const getBugIcon = (type: string) => {
   switch (type) {
     case 'Deployment Configuration Error':
-      return <ServerCrash className="h-6 w-6 text-red-500" />;
+      return <ServerCrash className="h-6 w-6 text-cyan-400" />;
     case 'Broken or Missing Static Assets':
       return <FileText className="h-6 w-6 text-yellow-500" />;
     case 'Data Persistence and State Management Error':
@@ -156,63 +156,63 @@ export function IdentifiedBugs({ issues = [] }: IdentifiedBugsProps) {
 
   if (allIssues.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+      <div className="dark-card rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wider">
           Identified Bugs
         </h2>
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-zinc-500">
           <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-          <p className="font-semibold">No bugs detected in the latest scan.</p>
+          <p className="font-bold uppercase tracking-wider">No bugs detected in the latest scan.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">
+    <div className="dark-card rounded-lg p-6">
+      <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wider">
         Identified Bugs (Real-Time)
       </h2>
       <div className="space-y-4">
         {allIssues.map((bug, index) => (
           <div
             key={index}
-            className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+            className="bg-zinc-900/50 border border-cyan-900/30 rounded-lg p-4 hover:border-cyan-800/50 transition-all smooth-transition"
           >
             <div className="flex items-start space-x-4">
               <div className="flex-shrink-0 mt-1">{getBugIcon(bug.type)}</div>
               <div className="flex-1">
                 <div className="flex justify-between items-center">
-                  <p className="font-bold text-lg text-gray-800">{bug.type}</p>
+                  <p className="font-bold text-lg text-white uppercase tracking-wide">{bug.type}</p>
                   <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg border ${
                       bug.severity === 'Critical'
-                        ? 'bg-red-100 text-red-700'
+                        ? 'bg-cyan-950/50 text-cyan-400 border-cyan-800/50'
                         : bug.severity === 'High'
-                        ? 'bg-orange-100 text-orange-700'
+                        ? 'bg-orange-950/50 text-orange-400 border-orange-800/50'
                         : bug.severity === 'Medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-green-100 text-green-700'
+                        ? 'bg-yellow-950/50 text-yellow-400 border-yellow-800/50'
+                        : 'bg-green-950/50 text-green-400 border-green-800/50'
                     }`}
                   >
                     {bug.severity}
                   </span>
                 </div>
 
-                <p className="text-md text-gray-700 mt-1">{bug.description}</p>
+                <p className="text-md text-zinc-300 mt-1">{bug.description}</p>
 
-                <div className="mt-3 bg-gray-100 rounded p-3 text-sm">
+                <div className="mt-3 bg-black/50 border border-zinc-800 rounded-lg p-3 text-sm font-mono">
                   <div className="flex items-center space-x-2">
-                    <FileCode className="h-4 w-4 text-gray-500" />
-                    <span className="font-semibold">Details:</span>
-                    <code className="text-red-600 break-all">
+                    <FileCode className="h-4 w-4 text-cyan-400" />
+                    <span className="font-bold text-zinc-400 uppercase tracking-wider">Details:</span>
+                    <code className="text-cyan-400 break-all">
                       {extractFilePath(bug.details)}
                     </code>
                   </div>
 
                   <div className="flex items-center space-x-2 mt-2">
-                    <span className="font-semibold ml-6">Detected:</span>
-                    <span className="text-gray-500">
+                    <span className="font-bold ml-6 text-zinc-400 uppercase tracking-wider">Detected:</span>
+                    <span className="text-zinc-500">
                       {new Date(bug.timestamp).toLocaleString()}
                     </span>
                   </div>

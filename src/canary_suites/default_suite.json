@@ -1,0 +1,31 @@
+{
+  "name": "Default AI Engine Suite",
+  "description": "Checks the core health of the AI Engine dashboard and API.",
+  "checks": [
+    {
+      "name": "Dashboard Page Load",
+      "type": "ui_exists",
+      "path": "/analysis",
+      "selector": "h1"
+    },
+    {
+      "name": "Dashboard Header Check",
+      "type": "ui_text",
+      "path": "/analysis",
+      "selector": "h1",
+      "text": "AI Engine"
+    },
+    {
+      "name": "API Health Check",
+      "type": "api_health",
+      "path": "http://localhost:8000/status",
+      "expected_status": 200
+    },
+    {
+      "name": "Task History API Check",
+      "type": "api_health",
+      "path": "http://localhost:8000/tasks",
+      "expected_status": 200
+    }
+  ]
+}

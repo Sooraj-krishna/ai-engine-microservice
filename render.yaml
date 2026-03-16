@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: ai-engine-microservice
+    runtime: docker
+    plan: free
+
+    startCommand: ./start.sh
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: ai-engine-redis
+          property: connectionString
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: WEBSITE_URL
+        sync: false
+      - key: GITHUB_REPO
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MONITORING_MODE
+        value: simple
+      - key: ENVIRONMENT
+        value: production
+
+  - type: redis
+    name: ai-engine-redis
+    plan: free
+    ipAllowList: [] # only allow internal connections

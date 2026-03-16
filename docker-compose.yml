@@ -1,0 +1,92 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ai-engine-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-engine-celery-worker
+    command: celery -A celery_app worker --loglevel=info
+    working_dir: /app/src
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-engine-api
+    command: uvicorn main_with_config:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /app/src
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ui:
+    image: node:18-alpine
+    container_name: ai-engine-ui
+    command: sh -c "npm install && npm run dev"
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ai-engine-ui:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    restart: always
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: ai-engine-network

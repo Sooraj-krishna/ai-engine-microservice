@@ -1,0 +1,19 @@
+{
+  "auto_approve_severities": [
+    "medium",
+    "low"
+  ],
+  "require_approval_severities": [
+    "critical",
+    "high"
+  ],
+  "silent_severities": [
+    "low"
+  ],
+  "notification_severities": [
+    "medium"
+  ],
+  "enabled": true,
+  "max_auto_approvals_per_day": 50,
+  "emergency_pause": false
+}

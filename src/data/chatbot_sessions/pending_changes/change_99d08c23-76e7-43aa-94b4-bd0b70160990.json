@@ -1,0 +1,64 @@
+{
+  "change_id": "99d08c23-76e7-43aa-94b4-bd0b70160990",
+  "session_id": "4520c294-c54d-481e-b81d-6931a03deefb",
+  "created_at": "2026-02-08T23:32:22.925625",
+  "status": "pending",
+  "plan": {
+    "summary": "Implement discernible text for 6 buttons in `index.html` to resolve the 'button-name' accessibility issue, ensuring screen reader users can understand their purpose.",
+    "steps": [
+      {
+        "step_number": 1,
+        "description": "Manually inspect the `index.html` file to identify the 6 instances of buttons that are missing discernible text, as flagged by the 'button-name' accessibility rule. Understand the context and intended functionality of each button to determine the most appropriate accessible name.",
+        "action_type": "analysis",
+        "details": "Use browser developer tools or a text editor to locate `<button>` elements or elements with `role='button'` that lack visible text content, an `aria-label`, or an `aria-labelledby` attribute. Pay close attention to icon-only buttons or buttons whose text is visually hidden but needs to be exposed to assistive technologies."
+      },
+      {
+        "step_number": 2,
+        "description": "For each of the 6 identified buttons in `index.html`, add an appropriate accessible name. This can be achieved by adding visible text content within the `<button>` tags, or by using an `aria-label` attribute for buttons that are purely iconic or have visually hidden text. If a visible label already exists nearby, use `aria-labelledby` to associate it.",
+        "action_type": "code_change",
+        "details": "Example for an icon-only button: Change `<button class=\"icon-search\"></button>` to `<button class=\"icon-search\" aria-label=\"Search\"></button>`. Example for a button with hidden text: Ensure the hidden text is correctly exposed or add `aria-label`. Prioritize visible text content where possible, as it benefits all users."
+      },
+      {
+        "step_number": 3,
+        "description": "Perform automated accessibility testing on the modified `index.html` using tools like Axe DevTools or Lighthouse to verify that the 'button-name' issue is resolved for all 6 instances. Ensure no new accessibility violations are introduced.",
+        "action_type": "testing",
+        "details": "Open the `index.html` file in a web browser, navigate to the pages containing the affected buttons, and run an accessibility audit. Confirm that the 'button-name' rule no longer flags any issues."
+      },
+      {
+        "step_number": 4,
+        "description": "Conduct manual testing using a screen reader (e.g., NVDA, JAWS, VoiceOver) to ensure that the implemented button names are correctly announced and provide a clear, concise, and accurate description of the button's purpose to screen reader users.",
+        "action_type": "testing",
+        "details": "Navigate through the page using keyboard and screen reader commands. Listen to how each of the 6 fixed buttons is announced. Verify that the announced name matches the intended function and is not redundant or confusing."
+      },
+      {
+        "step_number": 5,
+        "description": "Submit the modified `index.html` file for code review to ensure adherence to accessibility best practices, project coding standards, and to confirm the effectiveness of the implemented fixes.",
+        "action_type": "deployment",
+        "details": "Ensure the changes are well-documented and clearly explain the rationale behind the chosen accessible naming strategy for each button."
+      }
+    ],
+    "estimated_effort": "Medium",
+    "complexity": "low",
+    "affected_files": [
+      "index.html"
+    ],
+    "code_preview": {
+      "language": "html",
+      "filename": "index.html",
+      "code": "<!-- Before fix (Example 1: Icon-only button) -->\n<button class=\"icon-button\">\n    <img src=\"search-icon.svg\" alt=\"\">\n</button>\n\n<!-- After fix (Example 1: Using aria-label for icon-only button) -->\n<button class=\"icon-button\" aria-label=\"Search\">\n    <img src=\"search-icon.svg\" alt=\"\">\n</button>\n\n<!-- Before fix (Example 2: Button with no visible text) -->\n<button class=\"close-button\"></button>\n\n<!-- After fix (Example 2: Adding visible text) -->\n<button class=\"close-button\">Close</button>"
+    },
+    "risks": [
+      "Incorrect or ambiguous `aria-label` values could lead to misleading information for screen reader users, making the button's purpose unclear.",
+      "Introducing redundant labels if an `aria-label` is added to an element that already has a visible label or is implicitly labeled, potentially creating a confusing or verbose experience for screen reader users.",
+      "Overlooking some of the 6 instances during manual inspection, leading to an incomplete resolution of the accessibility bug and requiring further fixes.",
+      "Visual regression if visible text is added to buttons that were previously icon-only, requiring CSS adjustments to maintain the intended design."
+    ],
+    "rollback_strategy": "Revert the changes made to `index.html` to the previous version from version control (e.g., Git). This will restore the file to its state before the accessibility fixes were applied.",
+    "success_criteria": "All 6 instances of the 'button-name' accessibility issue in `index.html` are resolved as confirmed by automated accessibility tools (e.g., Axe DevTools) and manual screen reader testing. Screen reader users can clearly understand the purpose of each button.",
+    "plan_id": "e658a9e0-ca2f-4cc7-a91a-1b165dc3a21f",
+    "intent": "bug_fix",
+    "original_request": "Fix this accessibility issue:\n\n**Problem**: button-name\n**Description**: Ensure buttons have discernible text\n**Severity**: medium\n**Affected files**: index.html\n**Instances**: 6\n**Reference**: https://dequeuniversity.com/rules/axe/4.11/button-name?application=axeAPI\n"
+  },
+  "intent": "bug_fix",
+  "user_request": "Fix this accessibility issue:\n\n**Problem**: button-name\n**Description**: Ensure buttons have discernible text\n**Severity**: medium\n**Affected files**: index.html\n**Instances**: 6\n**Reference**: https://dequeuniversity.com/rules/axe/4.11/button-name?application=axeAPI\n"
+}
