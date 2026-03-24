@@ -48,9 +48,8 @@ graph TD
 ```
 
 ## 🖥 Demo
-👉 Add:
-- Screenshots OR
-- Loom video (2–3 min walkthrough)
+<img width="1366" height="768" alt="Screenshot from 2026-03-25 00-06-38" src="https://github.com/user-attachments/assets/b4f617b4-401e-4c7c-8846-4ec4d1e69573" />
+
 
 ## 💡 Key Features
 - **Automated issue detection and fixing:** Continuously monitors for broken links, UI/UX bugs, and console errors, automatically generating and testing code fixes.
