@@ -104,6 +104,12 @@ class BuildValidator:
         orphan_issues = self._check_orphaned_components(generated_files)
         issues.extend(orphan_issues)
         
+        # Check for unsafe array mappings (missing optional chaining)
+        for filepath, content in generated_files.items():
+            if filepath.endswith(('.tsx', '.jsx', '.ts', '.js')):
+                unsafe_issues = self._check_unsafe_array_mapping(filepath, content)
+                issues.extend(unsafe_issues)
+        
         # --- Framework-Specific Validation ---
         print("[BUILD_VALIDATOR] Running framework-specific validation...")
         framework_issues = framework_validator.validate_framework_rules(generated_files, repo_path)
@@ -324,6 +330,12 @@ class BuildValidator:
             elif issue['type'] == 'filename_component_mismatch':
                 # Fix component name to match filename
                 fix = self._fix_filename_mismatch(issue, generated_files)
+                if fix:
+                    filepath, new_content = fix
+                    fixed_files[filepath] = new_content
+                    
+            elif issue['type'] == 'unsafe_optional_chaining':
+                fix = self._fix_unsafe_optional_chaining(issue, generated_files)
                 if fix:
                     filepath, new_content = fix
                     fixed_files[filepath] = new_content
@@ -562,6 +574,58 @@ class BuildValidator:
         
         return issues
     
+    def _check_unsafe_array_mapping(self, filepath: str, content: str) -> List[Dict]:
+        """Check for common array methods without optional chaining."""
+        issues = []
+        lines = content.split('\n')
+        for line_num, line in enumerate(lines, 1):
+            # Skip comments
+            if '//' in line and line.find('//') < line.find('.'):
+                continue
+            
+            # Matches `product.categories.map(` but cleanly targets the non-optional parts
+            matches = re.finditer(r'([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\.(map|filter|forEach|reduce)\s*\(', line)
+            for match in matches:
+                full_chain = match.group(1)
+                method_name = match.group(2)
+                
+                # Exclude standard safe globally available objects
+                if full_chain in ['Children', 'React.Children', 'Promise', 'Object', 'Array']:
+                    continue
+                    
+                issues.append({
+                    'type': 'unsafe_optional_chaining',
+                    'file': filepath,
+                    'line': line_num,
+                    'full_chain': full_chain,
+                    'method_name': method_name,
+                    'message': f"Potentially unsafe array operation: '{full_chain}.{method_name}()'. Missing optional chaining."
+                })
+        return issues
+
+    def _fix_unsafe_optional_chaining(self, issue: Dict, generated_files: Dict[str, str]) -> Optional[Tuple[str, str]]:
+        """Auto-inject optional chaining into unsafe array methods."""
+        file_path = issue['file']
+        full_chain = issue.get('full_chain')
+        method_name = issue.get('method_name', 'map')
+        content = generated_files.get(file_path, '')
+        if not content or not full_chain:
+            return None
+            
+        # Smartly replace `obj.prop.map(` with `obj?.prop?.map(`
+        safe_chain = full_chain.replace('.', '?.')
+        original_string = f"{full_chain}.{method_name}"
+        safe_string = f"{safe_chain}?.{method_name}"
+        
+        # Use regex to replace to avoid accidentally replacing partial variable names
+        new_content = re.sub(rf'\b{re.escape(original_string)}\s*\(', f'{safe_string}(', content)
+        
+        if new_content != content:
+            print(f"[BUILD_VALIDATOR] 🛡️ Auto-fixed unsafe iteration: '{original_string}()' -> '{safe_string}()'")
+            return (file_path, new_content)
+            
+        return None
+
     def _calculate_relative_path(self, from_file: str, to_file: str) -> str:
         """Calculate relative import path between two files."""
         from_dir = os.path.dirname(from_file)

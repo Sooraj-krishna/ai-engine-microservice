@@ -3,7 +3,7 @@
     "type": "canary_failure",
     "severity": "warning",
     "message": "\u26a0\ufe0f Canary test suite failed for https://buggy-cart-testing-web-application-chi.vercel.app/ during bug fix verification.",
-    "timestamp": "2026-02-08T23:32:34.966437",
+    "timestamp": "2026-03-18T14:10:42.212531",
     "data": {
       "canary_result": {
         "suite_name": "default_suite",
@@ -31,13 +31,60 @@
             "success": true
           }
         ],
-        "timestamp": 1770573750.6079717
+        "timestamp": 1773823238.5132446
       },
       "bug": {
         "type": "general_bug",
-        "description": "Implement discernible text for 6 buttons in `index.html` to resolve the 'button-name' accessibility issue, ensuring screen reader users can understand their purpose.",
-        "file": "index.html"
+        "description": "Diagnose and fix slow page load time in `index.html` by performing a performance audit, identifying bottlenecks, and implementing code splitting to reduce the initial JavaScript bundle size. Additional optimizations to `index.html` direct assets will be considered if identified.",
+        "file": "src/App.tsx"
       }
+    }
+  },
+  {
+    "type": "pr_created",
+    "severity": "success",
+    "message": "\ud83d\ude80 PR Created: https://github.com/Sooraj-krishna/Buggy_cart_Testing_Web_Application/compare/ai-fix-nextjs-20260318141032",
+    "timestamp": "2026-03-18T14:10:42.216817",
+    "data": {
+      "pr_url": "https://github.com/Sooraj-krishna/Buggy_cart_Testing_Web_Application/compare/ai-fix-nextjs-20260318141032",
+      "change_id": 64,
+      "bug": {
+        "type": "general_bug",
+        "description": "Diagnose and fix slow page load time in `index.html` by performing a performance audit, identifying bottlenecks, and implementing code splitting to reduce the initial JavaScript bundle size. Additional optimizations to `index.html` direct assets will be considered if identified.",
+        "file": "src/App.tsx"
+      }
+    }
+  },
+  {
+    "type": "auto_fix",
+    "severity": "medium",
+    "message": "Auto-fixed medium severity bug: Slow page load time (found in 1 file(s))",
+    "timestamp": "2026-03-18T14:10:42.219227",
+    "data": {
+      "bug": {
+        "type": "performance",
+        "severity": "medium",
+        "description": "Slow page load time (found in 1 file(s))",
+        "details": "Page load time is 3030ms, which exceeds the recommended 3 seconds",
+        "framework": "nextjs",
+        "language": "javascript",
+        "target_file": "index.html",
+        "data": {
+          "type": "Slow Page Load",
+          "loadTime": 3030.1999999999534,
+          "threshold": 3000,
+          "nodes_affected": 5,
+          "files_affected": 1
+        },
+        "safe_mode": true,
+        "requires_approval": false,
+        "affected_files": [
+          "index.html"
+        ],
+        "consolidated": true,
+        "original_count": 5
+      },
+      "pr_url": "https://github.com/Sooraj-krishna/Buggy_cart_Testing_Web_Application/compare/ai-fix-nextjs-20260318141032"
     }
   }
 ]

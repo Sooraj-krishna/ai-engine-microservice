@@ -7,7 +7,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from model_router import _query_gemini_api
 
 
@@ -27,6 +27,7 @@ class FeatureImplementationManager:
         self.selected_features_file = self.storage_dir / "selected_features.json"
         self.implementation_plans_dir = self.storage_dir / "plans"
         self.implementation_plans_dir.mkdir(parents=True, exist_ok=True)
+        self.routing_memory_file = self.storage_dir / "file_routing_memory.json"
     
     def select_feature_for_implementation(
         self, 
@@ -295,6 +296,155 @@ class FeatureImplementationManager:
         
         return False
 
+    def _load_routing_memory(self) -> Dict[str, str]:
+        """Load intelligent file routing memory to resolve AI hallucinated paths to exact project paths."""
+        if self.routing_memory_file.exists():
+            try:
+                with open(self.routing_memory_file, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"[FILE_ROUTER] ⚠️ Failed to load memory: {e}")
+        return {}
+        
+    def _save_routing_memory(self, memory: Dict[str, str]):
+        """Save file routing memory state."""
+        try:
+            with open(self.routing_memory_file, 'w') as f:
+                json.dump(memory, f, indent=2)
+        except Exception as e:
+            print(f"[FILE_ROUTER] ⚠️ Failed to save memory: {e}")
+            
+    def _prune_routing_memory(self, repo_path: str):
+        """
+        Proactively prunes old or unused routing memory paths if the target files
+        no longer exist in the repository.
+        """
+        import os
+        routing_memory = self._load_routing_memory()
+        if not routing_memory:
+            return
+            
+        keys_to_delete = []
+        for original, resolved in routing_memory.items():
+            full_path = os.path.join(repo_path, resolved)
+            if not os.path.exists(full_path):
+                print(f"[FILE_ROUTER] 🧹 Pruning dead memory path: {resolved}")
+                keys_to_delete.append(original)
+                
+        if keys_to_delete:
+            for k in keys_to_delete:
+                del routing_memory[k]
+            self._save_routing_memory(routing_memory)
+            print(f"[FILE_ROUTER] ✅ Pruned {len(keys_to_delete)} dead routing memory entries.")
+            
+    def _intelligently_route_files(self, affected_files: List[str], repo_path: str, codebase_context: Dict = None) -> Tuple[List[str], List[str]]:
+        """
+        Uses memory and heuristics to intelligently route file paths, correcting AI hallucinations.
+        Returns: (existing_files_to_modify, new_files_to_create)
+        """
+        import os
+        existing_files = []
+        new_files = []
+        
+        routing_memory = self._load_routing_memory()
+        memory_updated = False
+        project_structure = codebase_context.get('project_structure', {}) if codebase_context else {}
+        
+        for filepath in affected_files:
+            filepath = filepath.strip()
+            full_path = os.path.join(repo_path, filepath)
+            
+            # 1. Check exact match
+            if os.path.exists(full_path) and os.path.isfile(full_path):
+                print(f"[FILE_ROUTER] ✅ {filepath} exactly matches existing file")
+                if filepath not in existing_files:
+                    existing_files.append(filepath)
+                continue
+                
+            # 2. Check routing memory mapping
+            if filepath in routing_memory:
+                mem_path = routing_memory[filepath]
+                full_mem_path = os.path.join(repo_path, mem_path)
+                if os.path.exists(full_mem_path) and os.path.isfile(full_mem_path):
+                    print(f"[FILE_ROUTER] 🧠 Routed {filepath} -> {mem_path} (from memory)")
+                    if mem_path not in existing_files:
+                        existing_files.append(mem_path)
+                    continue
+                else:
+                    del routing_memory[filepath]
+                    memory_updated = True
+                    
+            # 3. Fuzzy search / Similar file match
+            similar = self._find_similar_file(filepath, repo_path)
+            if similar:
+                print(f"[FILE_ROUTER] 🔍 Fuzzy matched {filepath} -> {similar}")
+                routing_memory[filepath] = similar
+                memory_updated = True
+                if similar not in existing_files:
+                    existing_files.append(similar)
+                continue
+                
+            # 4. Not an existing file - Route as new file
+            routed_new_path = self._route_new_file(filepath, repo_path, project_structure, routing_memory)
+            if routed_new_path:
+                print(f"[FILE_ROUTER] 📄 Routed new file {filepath} -> {routed_new_path}")
+                if filepath != routed_new_path:
+                    routing_memory[filepath] = routed_new_path
+                    memory_updated = True
+                if routed_new_path not in new_files and routed_new_path not in existing_files:
+                    new_files.append(routed_new_path)
+            else:
+                print(f"[FILE_ROUTER] ⚠️ Could not find valid route for new file: {filepath}")
+                
+        if memory_updated:
+            self._save_routing_memory(routing_memory)
+            
+        return existing_files, new_files
+
+    def _route_new_file(self, filepath: str, repo_path: str, project_structure: Dict, memory: Dict) -> Optional[str]:
+        """Intelligently determine best path for a new file based on codebase structure and memory."""
+        import os
+        
+        basename = os.path.basename(filepath)
+        dirname = os.path.dirname(filepath)
+        
+        full_dir = os.path.join(repo_path, dirname)
+        if dirname and os.path.exists(full_dir):
+            return filepath
+            
+        for mem_original, mem_resolved in memory.items():
+            mem_orig_dir = os.path.dirname(mem_original)
+            mem_res_dir = os.path.dirname(mem_resolved)
+            if mem_orig_dir and mem_orig_dir in dirname and mem_res_dir:
+                mapped_dir = dirname.replace(mem_orig_dir, mem_res_dir, 1)
+                mapped_full_dir = os.path.join(repo_path, mapped_dir)
+                if os.path.exists(mapped_full_dir):
+                    return os.path.join(mapped_dir, basename)
+
+        discovered_dirs = project_structure.get('directories', {})
+        top_dirs = project_structure.get('top_code_directories', [])
+        all_discovered = list(discovered_dirs.keys()) + top_dirs
+        
+        target_folder_name = os.path.basename(dirname) if dirname else ""
+        if target_folder_name:
+            for d in all_discovered:
+                if d.endswith('/' + target_folder_name) or d == target_folder_name:
+                    mapped_path = os.path.join(d, basename)
+                    if os.path.exists(os.path.join(repo_path, os.path.dirname(mapped_path))):
+                        return mapped_path
+                        
+        common_patterns = ['client/src/', 'src/', 'app/', 'pages/', 'components/']
+        for pattern in common_patterns:
+            if filepath.startswith(pattern):
+                return filepath
+                
+        if top_dirs:
+            src_dirs = [d for d in top_dirs if d.endswith('src')]
+            if src_dirs:
+                return os.path.join(src_dirs[0], dirname, basename) if dirname else os.path.join(src_dirs[0], basename)
+            return os.path.join(top_dirs[0], dirname, basename) if dirname else os.path.join(top_dirs[0], basename)
+            
+        return filepath
     
     def generate_implementation_plan(self, feature: Dict, analysis_results: Dict) -> Optional[Dict]:
         """
@@ -319,6 +469,13 @@ class FeatureImplementationManager:
         
         implementation_notes = feature.get("implementation_notes", "")
         
+        # Load routing memory compactly to save tokens and prevent path hallucinations
+        routing_memory = self._load_routing_memory()
+        routing_context = ""
+        if routing_memory:
+            compact_memory = " | ".join([f"{k}->{v}" for k, v in routing_memory.items()])
+            routing_context = f"\nFILE ROUTING MEMORY (If modifying these files, ALWAYS use the right-hand actual paths):\n{compact_memory}\n"
+        
         # Create prompt for AI
         prompt = f"""
 Generate a detailed implementation plan for adding this feature to our website:
@@ -334,6 +491,7 @@ Context:
 
 Implementation Notes from Analysis:
 {implementation_notes}
+{routing_context}
 
 Please provide a JSON response with the following structure:
 {{
@@ -498,41 +656,20 @@ Make the plan practical and actionable.
                 
                 all_files = []
                 if repo_path:
-                    print(f"[FEATURE_IMPL] Validating {len(affected_files)} file paths...")
-                    valid_file_paths = self._validate_and_resolve_file_paths(affected_files, repo_path)
+                    print(f"[FEATURE_IMPL] 🧠 Using Intelligent File Routing with Memory for {len(affected_files)} paths...")
+                    existing_files, new_files = self._intelligently_route_files(affected_files, repo_path, codebase_context)
                     
-                    if not valid_file_paths and affected_files: # Only error if chatbot suggested files but none were valid
-                        error_msg = f"Chatbot suggested files {affected_files} but none exist in repository"
+                    all_files = existing_files + new_files
+                    
+                    if not all_files and affected_files:
+                        error_msg = f"Chatbot suggested files {affected_files} but none could be routed to the repository"
                         print(f"[ERROR] {error_msg}")
                         return {
                             "success": False,
                             "error": "Invalid file paths",
                             "message": error_msg
                         }
-                    
-                    print(f"[FEATURE_IMPL] ✅ Validated to {len(valid_file_paths)} actual files: {valid_file_paths}")
-                    
-                    # CRITICAL: Separate new files from existing files
-                    existing_files = []
-                    new_files = []
-                    
-                    for filepath in affected_files:
-                        if filepath in valid_file_paths:
-                            # File exists - will modify
-                            existing_files.append(filepath)
-                        else:
-                            # File doesn't exist - will create
-                            # Validate the path structure is reasonable using discovered directories
-                            project_structure = codebase_context.get('project_structure', {})
-                            if self._is_valid_new_file_path(filepath, repo_path, project_structure):
-                                print(f"[FEATURE_IMPL] 📄 Will create new file: {filepath}")
-                                new_files.append(filepath)
-                            else:
-                                print(f"[FEATURE_IMPL] ⚠️  Invalid path for new file: {filepath}")
-                    
-                    # Combine for file modification list
-                    all_files = existing_files + new_files
-                    print(f"[FEATURE_IMPL] Files: {len(existing_files)} existing, {len(new_files)} new")
+                    print(f"[FEATURE_IMPL] ✅ Routed files: {len(existing_files)} existing, {len(new_files)} new")
                 else:
                     print(f"[WARNING] No repo_path for validation, using chatbot paths as-is")
                     all_files = affected_files
@@ -761,6 +898,63 @@ Make the plan practical and actionable.
                 import traceback
                 traceback.print_exc()
 
+            # ACTUAL NPM BUILD TEST WITH INTELLIGENT AUTO-CORRECTION
+            print("[FEATURE_IMPL] 🚀 Running actual npm build test before PR creation...")
+            repo_path = codebase_context.get('repo_path')
+            if repo_path:
+                max_correction_attempts = 3
+                attempt = 1
+                build_success = False
+                build_logs = ""
+                correction_memory = []
+                
+                while attempt <= max_correction_attempts:
+                    print(f"[FEATURE_IMPL] 🏗️ Running npm build test (Attempt {attempt}/{max_correction_attempts})...")
+                    build_success, build_logs = self._run_npm_build_test(generated_files, repo_path)
+                    
+                    if build_success:
+                        print("[FEATURE_IMPL] ✅ NPM Build test succeeded!")
+                        break
+                        
+                    print(f"[FEATURE_IMPL] ❌ NPM Build failed on attempt {attempt}:\n{build_logs[-1000:]}")
+                    
+                    if attempt == max_correction_attempts:
+                        break
+                        
+                    print(f"[FEATURE_IMPL] 🤖 Triggering intelligent auto-correction...")
+                    correction_memory.append({
+                        "attempt": attempt,
+                        "logs": build_logs[-1500:]
+                    })
+                    
+                    generated_files = await self._auto_correct_files(
+                        generated_files,
+                        build_logs,
+                        plan,
+                        feature,
+                        codebase_context,
+                        correction_memory
+                    )
+                    attempt += 1
+
+                if not build_success:
+                    error_msg = f"Generated code caused npm build errors after {max_correction_attempts} attempts."
+                    print(f"[FEATURE_IMPL] ❌ {error_msg}")
+                    
+                    # Update status to pending with error note
+                    self.update_feature_status(
+                        feature_id,
+                        "pending",
+                        f"Execution failed: {error_msg}\nCheck logs for details."
+                    )
+                    
+                    return {
+                        "success": False,
+                        "error": "NPM Build Failed",
+                        "message": f"{error_msg}\n\nBuild Logs:\n{build_logs[-1000:]}"
+                    }
+            else:
+                print("[FEATURE_IMPL] ⚠️ Skipping npm build test, no repo_path available.")
             
             
             # Write files to repository and create PR
@@ -809,6 +1003,188 @@ Make the plan practical and actionable.
                 "message": f"Feature execution failed: {str(e)}"
             }
     
+    async def _auto_correct_files(self, current_files: List[Dict], build_logs: str, plan: Dict, feature: Dict, codebase_context: Dict, memory: List[Dict]) -> List[Dict]:
+        """
+        Intelligently analyzes build logs and attempts to fix the generated code.
+        Uses memory of previous attempts to avoid repeating mistakes.
+        """
+        print(f"[AUTO_CORRECT] 🧠 Analyzing build logs to generate fixes...")
+        
+        files_context = ""
+        for f in current_files:
+            files_context += f"--- FILE: {f['path']} ---\n```\n{f['content']}\n```\n\n"
+            
+        memory_context = ""
+        if memory:
+            memory_context = "PREVIOUS ATTEMPTS AND ERRORS:\n"
+            for m in memory:
+                memory_context += f"Attempt {m['attempt']} failed with logs:\n...{m['logs']}\n\n"
+                
+        routing_memory = self._load_routing_memory()
+        routing_context = ""
+        if routing_memory:
+            compact_memory = " | ".join([f"{k}->{v}" for k, v in routing_memory.items()])
+            routing_context = f"FILE ROUTING MEMORY (If fixing imports or file paths, ALWAYS use the right-hand actual paths):\n{compact_memory}\n\n"
+                
+        prompt = f"""You are an expert software engineer resolving build errors in a codebase.
+An automated system attempted to implement a feature but the build failed.
+
+FEATURE: {plan.get('feature_name')}
+OVERVIEW: {plan.get('overview')}
+
+YOUR TASK:
+Analyze the BUILD LOGS and the CURRENT FILES provided below.
+Identify the cause of the build failure (e.g. missing imports, syntax errors, undefined variables).
+Provide the corrected code for ANY file that needs to be fixed to resolve the build errors.
+DO NOT provide files that don't need changes.
+
+{routing_context}
+{memory_context}
+
+BUILD LOGS (Tail):
+```
+{build_logs[-3000:]}
+```
+
+CURRENT FILES (Recently modified/created):
+{files_context}
+
+REQUIREMENTS:
+1. Respond ONLY with a JSON array of objects for the files you are fixing.
+2. Structure: [ {{"file": "path/to/file", "content": "FULL_CORRECTED_CODE"}} ]
+3. You must provide the FULL file content, not diffs.
+4. Ensure all imports are correct and match the existing project structure.
+5. If the error mentions a missing file, you can create it by adding a new object to the array.
+"""
+
+        try:
+            import json
+            import re
+            
+            response = _query_gemini_api(
+                messages=[{"role": "user", "content": prompt}],
+                timeout=120
+            )
+            
+            if not response or "error" in response:
+                print(f"[AUTO_CORRECT] ⚠️ AI API Error: {response.get('error', 'Unknown error') if response else 'No response'}")
+                return current_files
+                
+            ai_text = response.get("text") or response.get("content") or response.get("response", "")
+            
+            json_str = ai_text
+            if "```json" in ai_text:
+                match = re.search(r'```json\n(.*?)\n```', ai_text, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+            elif "```" in ai_text:
+                match = re.search(r'```\n(.*?)\n```', ai_text, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+                    
+            try:
+                fixes = json.loads(json_str)
+                if isinstance(fixes, list):
+                    print(f"[AUTO_CORRECT] 💡 AI suggested fixes for {len(fixes)} file(s).")
+                    
+                    updated_files = list(current_files)
+                    for fix in fixes:
+                        fix_path = fix.get('file')
+                        fix_content = fix.get('content')
+                        
+                        if fix_path and fix_content:
+                            found = False
+                            for i, cf in enumerate(updated_files):
+                                if cf['path'] == fix_path:
+                                    updated_files[i]['content'] = fix_content
+                                    found = True
+                                    print(f"[AUTO_CORRECT]   ✓ Applied fix to {fix_path}")
+                                    break
+                            if not found:
+                                updated_files.append({
+                                    "path": fix_path,
+                                    "content": fix_content,
+                                    "description": "Auto-corrected file"
+                                })
+                                print(f"[AUTO_CORRECT]   + Added new fixed file {fix_path}")
+                                
+                    return updated_files
+                else:
+                    print(f"[AUTO_CORRECT] ⚠️ Invalid JSON structure from AI (not a list).")
+            except json.JSONDecodeError as e:
+                print(f"[AUTO_CORRECT] ⚠️ Failed to parse AI JSON response: {e}")
+                print(f"[AUTO_CORRECT] Raw response: {ai_text[:200]}...")
+                
+        except Exception as e:
+            print(f"[AUTO_CORRECT] ⚠️ Exception during auto-correction: {e}")
+            
+        return current_files
+
+    def _run_npm_build_test(self, generated_files: List[Dict], repo_path: str) -> tuple:
+        """
+        Temporarily write generated files to the repository, run npm build, 
+        and revert the files to ensure changes don't break the build.
+        """
+        import os
+        import subprocess
+        
+        # Only run if package.json exists
+        if not os.path.exists(os.path.join(repo_path, 'package.json')):
+            print("[BUILD_TEST] No package.json found, skipping npm build.")
+            return True, "No package.json"
+            
+        backups = {}
+        new_files = []
+        
+        try:
+            # 1. Write files to disk and backup originals
+            for f in generated_files:
+                file_path = os.path.join(repo_path, f['path'])
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                
+                if os.path.exists(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        backups[file_path] = file.read()
+                else:
+                    new_files.append(file_path)
+                    
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(f['content'])
+            
+            # 2. Check if node_modules exists, run npm install if not
+            if not os.path.exists(os.path.join(repo_path, 'node_modules')):
+                print("[BUILD_TEST] Running npm install...")
+                install_result = subprocess.run(['npm', 'install'], cwd=repo_path, capture_output=True, text=True)
+                if install_result.returncode != 0:
+                    return False, "npm install failed:\n" + install_result.stderr
+                
+            # 3. Run npm run build
+            print("[BUILD_TEST] Executing npm run build...")
+            result = subprocess.run(['npm', 'run', 'build'], cwd=repo_path, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return True, result.stdout
+            else:
+                return False, result.stdout + "\n" + result.stderr
+                
+        except Exception as e:
+            import traceback
+            print(f"[BUILD_TEST] Exception during build test: {e}")
+            return False, str(e) + "\n" + traceback.format_exc()
+            
+        finally:
+            # 4. Restore originals and clean up new files
+            for file_path, content in backups.items():
+                if os.path.exists(file_path):
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.write(content)
+            for file_path in new_files:
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except OSError:
+                        pass
+
     async def _generate_file_code(self, file_spec: Dict, plan: Dict, feature: Dict, codebase_context: Dict = None) -> str:
         """
         Generate actual production-ready code for a file based on the plan.

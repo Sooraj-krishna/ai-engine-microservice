@@ -9,9 +9,11 @@ from celery import Celery
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables.
+# Some environments block dotfiles; fall back to `config.env`.
 env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+fallback_env_path = Path(__file__).parent.parent / 'config.env'
+load_dotenv(dotenv_path=env_path if env_path.exists() else fallback_env_path)
 
 # Redis URL from environment or fallback to localhost
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

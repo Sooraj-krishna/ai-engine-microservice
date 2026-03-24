@@ -25,6 +25,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install --with-deps chromium
 
+# Install Playwright browser binaries + OS deps.
+# Without this, any runtime usage of Playwright (Lighthouse/e2e/a11y tests) fails.
+RUN python -m playwright install --with-deps chromium
+
+# Copy source code
 # Copy backend source code
 COPY ./src ./src
 COPY ./tests ./tests
@@ -42,5 +47,5 @@ ENV PYTHONUNBUFFERED=1
 # Expose port (Render sets PORT env var, but we expose 8000 default)
 EXPOSE 8000
 
-# Start both Celery and FastAPI
-CMD ["./start.sh"]
+# Default entrypoint (compose overrides the command).
+CMD ["uvicorn", "main_with_config:app", "--host", "0.0.0.0", "--port", "8000"]
