@@ -25,7 +25,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
     env_file:
-      - .env
+      - config.env
     volumes:
       - ./src:/app/src
       - ./data:/app/data
@@ -51,7 +51,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
     env_file:
-      - .env
+      - config.env
     volumes:
       - ./src:/app/src
       - ./data:/app/data
@@ -78,7 +78,9 @@ services:
       - ./ai-engine-ui:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      # Next.js reads these at startup; inside Docker the backend is reachable as `api`.
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - BACKEND_URL=http://api:8000
     depends_on:
       - api
     restart: always

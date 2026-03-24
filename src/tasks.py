@@ -10,30 +10,58 @@ from datetime import datetime
 from celery_app import celery_app
 from pathlib import Path
 from dotenv import load_dotenv
+import sys
+import importlib.util
 
-# Load environment variables
+# Load environment variables.
+# Some environments block dotfiles; fall back to `config.env`.
 env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+fallback_env_path = Path(__file__).parent.parent / 'config.env'
+load_dotenv(dotenv_path=env_path if env_path.exists() else fallback_env_path)
+
+# Ensure the `src/` directory is on sys.path when Celery forks worker processes.
+# (Without this, task-time imports like `import main_with_config` can fail depending on how the worker was launched.)
+SRC_DIR = Path(__file__).resolve().parent
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+
+def _load_module_from_src(module_name: str):
+    """
+    Load a module by filename from the `src/` directory.
+    This avoids brittle sys.path / working-directory issues in Celery forked workers.
+    """
+    module_path = SRC_DIR / f"{module_name}.py"
+    # Ensure imports like `import github_handler` (also in src/) resolve while executing the loaded module.
+    if str(SRC_DIR) not in sys.path:
+        sys.path.insert(0, str(SRC_DIR))
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if not spec or not spec.loader:
+        raise ModuleNotFoundError(f"Could not load module '{module_name}' from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 @celery_app.task(name="tasks.maintenance_cycle", bind=True)
 def task_maintenance_cycle(self):
     """Celery task for running the enhanced maintenance cycle."""
-    from main_with_config import start_enhanced_maintenance_cycle
+    main_with_config = _load_module_from_src("main_with_config")
     print(f"[CELERY] Starting maintenance cycle task {self.request.id}")
     
     # Run the existing logic
     # Note: start_enhanced_maintenance_cycle is synchronous but contains async calls via asyncio.run
-    start_enhanced_maintenance_cycle()
+    main_with_config.start_enhanced_maintenance_cycle()
     
     return {"status": "completed", "task_id": self.request.id}
 
 @celery_app.task(name="tasks.manual_rollback", bind=True)
 def task_manual_rollback(self):
     """Celery task for performing manual rollback."""
-    from main_with_config import perform_manual_rollback
+    main_with_config = _load_module_from_src("main_with_config")
     print(f"[CELERY] Starting manual rollback task {self.request.id}")
     
-    perform_manual_rollback()
+    main_with_config.perform_manual_rollback()
     
     return {"status": "completed", "task_id": self.request.id}
 

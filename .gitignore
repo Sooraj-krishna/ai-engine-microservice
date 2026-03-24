@@ -7,6 +7,8 @@ node_modules/
 .env.local
 .env.development
 .env.production
+config.env
+config.env.*
 
 # Logs
 logs/
@@ -47,3 +49,4 @@ Thumbs.db
 uploads/
 temp/
 backups/
+data/
