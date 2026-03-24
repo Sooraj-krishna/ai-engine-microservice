@@ -41,6 +41,18 @@
       "created_at": "2026-03-25T00:34:26.116049",
       "updated_at": "2026-03-25T00:34:26.117014",
       "message_count": 1
+    },
+    "f93e3382-867a-4c88-9f88-cf12a057db65": {
+      "user_id": "auto_fix_system",
+      "created_at": "2026-02-17T11:00:32.004966",
+      "updated_at": "2026-02-17T11:00:32.006498",
+      "message_count": 1
+    },
+    "82f2cb30-9e6c-4ab8-98a6-384472726d8c": {
+      "user_id": "auto_fix_system",
+      "created_at": "2026-02-17T12:31:05.284941",
+      "updated_at": "2026-02-17T12:31:05.286016",
+      "message_count": 1
     }
   },
   "total_sessions": 7,

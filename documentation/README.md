@@ -116,6 +116,7 @@ Visit http://localhost:3000 to access the UI!
 Comprehensive guides available in the `documentation/` folder:
 
 - **[SETUP.md](./SETUP.md)** - Installation and configuration
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deploying to Render
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and components
 - **[API.md](./API.md)** - REST API endpoints
 - **[CONFIGURATION.md](./CONFIGURATION.md)** - Environment variables

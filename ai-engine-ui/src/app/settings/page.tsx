@@ -20,12 +20,10 @@ export default function SettingsPage() {
 
   const fetchSetting = async () => {
     try {
-      // Fetch AI classification setting
       const aiResponse = await fetch(`${API_URL}/settings/ai-classification`);
       const aiData = await aiResponse.json();
       setUseAiClassification(aiData.use_ai_classification);
 
-      // Fetch config for other settings
       const configResponse = await fetch(`${API_URL}/config`);
       const configData = await configResponse.json();
       setUseImprovedFixer(configData.use_improved_fixer || false);
@@ -72,21 +70,21 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white flex items-center justify-center">
-        <div className="text-cyan-400">Loading settings...</div>
+      <div className="min-h-screen text-white flex items-center justify-center">
+        <div className="text-white/60">Loading settings...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
+    <div className="min-h-screen text-white">
       {/* Header */}
-      <div className="border-b border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 to-transparent">
-        <div className="container mx-auto px-6 py-8">
+      <div className="border-b border-white/10">
+        <div className="container mx-auto px-6 py-8 pt-24">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
               <svg
-                className="w-6 h-6"
+                className="w-6 h-6 text-white/80"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -105,11 +103,11 @@ export default function SettingsPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
               Settings
             </h1>
           </div>
-          <p className="text-gray-400">Configure AI Engine behavior and preferences</p>
+          <p className="text-white/50">Configure AI Engine behavior and preferences</p>
         </div>
       </div>
 
@@ -117,43 +115,43 @@ export default function SettingsPage() {
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Success Message */}
         {message && (
-          <div className="mb-6 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/20 text-white/80">
             {message}
           </div>
         )}
 
         {/* General Settings */}
-        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 shadow-xl mb-6">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl mb-6">
           <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
             <span>⚙️</span>
             General Settings
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-white/50 text-sm">
             Basic configuration options for the AI Engine.
           </p>
-          <div className="mt-4 p-4 bg-gray-800/50 rounded-lg opacity-50">
-            <p className="text-sm text-gray-400">Coming soon...</p>
+          <div className="mt-4 p-4 bg-white/5 rounded-xl opacity-50">
+            <p className="text-sm text-white/40">Coming soon...</p>
           </div>
         </div>
 
         {/* Advanced Options - Collapsible */}
-        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl shadow-xl overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl overflow-hidden">
           {/* Header - Clickable */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-cyan-500/5 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
                 ⚡
               </div>
               <div className="text-left">
                 <h2 className="text-xl font-semibold text-white">Advanced Options</h2>
-                <p className="text-sm text-gray-400">Performance and API configuration</p>
+                <p className="text-sm text-white/50">Performance and API configuration</p>
               </div>
             </div>
             <svg
-              className={`w-6 h-6 text-gray-400 transition-transform ${
+              className={`w-6 h-6 text-white/40 transition-transform ${
                 showAdvanced ? "rotate-180" : ""
               }`}
               fill="none"
@@ -175,15 +173,15 @@ export default function SettingsPage() {
               showAdvanced ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
             } overflow-hidden`}
           >
-            <div className="px-6 pb-6 pt-2 border-t border-cyan-500/10 max-h-[1200px] overflow-y-auto"
-              style={{ scrollbarWidth: 'thin', scrollbarColor: '#06b6d4 #1f2937' }}
+            <div className="px-6 pb-6 pt-2 border-t border-white/10 max-h-[1200px] overflow-y-auto"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: '#ffffff33 #1f2937' }}
             >
               {/* AI Classification Setting */}
               <div className="mt-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
                         🧠
                       </div>
                       <div>
@@ -193,17 +191,17 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`inline-block w-2 h-2 rounded-full ${
-                              useAiClassification ? "bg-green-500" : "bg-gray-500"
+                              useAiClassification ? "bg-green-500" : "bg-white/30"
                             }`}
                           ></span>
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-white/50">
                             {useAiClassification ? "Enabled" : "Disabled"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
+                    <p className="text-white/50 text-sm mt-4 leading-relaxed">
                       When enabled, uses Gemini AI to intelligently classify bug severity
                       with high accuracy. When disabled, uses rule-based classification to
                       save API tokens.
@@ -212,12 +210,12 @@ export default function SettingsPage() {
                     {/* Comparison Table */}
                     <div className="mt-6 grid grid-cols-2 gap-4">
                       {/* AI Classification */}
-                      <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-purple-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/80 mb-2 flex items-center gap-2 text-sm">
                           <span>🤖</span>
                           <span>AI Classification</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>~95% accuracy</span>
@@ -227,19 +225,19 @@ export default function SettingsPage() {
                             <span>Context-aware analysis</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
+                            <span className="text-red-400">✗</span>
                             <span>Uses API tokens</span>
                           </li>
                         </ul>
                       </div>
 
                       {/* Rule-Based */}
-                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-cyan-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/80 mb-2 flex items-center gap-2 text-sm">
                           <span>📋</span>
                           <span>Rule-Based</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>~85-90% accuracy</span>
@@ -264,18 +262,18 @@ export default function SettingsPage() {
                       disabled={saving}
                       className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
                         useAiClassification
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                          : "bg-gray-700"
+                          ? "bg-white"
+                          : "bg-white/20"
                       } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          useAiClassification ? "translate-x-10" : "translate-x-1"
+                        className={`inline-block h-8 w-8 transform rounded-full shadow-lg transition-transform ${
+                          useAiClassification ? "translate-x-10 bg-black" : "translate-x-1 bg-white"
                         }`}
                       />
                     </button>
                     {saving && (
-                      <div className="text-xs text-gray-400 mt-2 text-center">
+                      <div className="text-xs text-white/40 mt-2 text-center">
                         Saving...
                       </div>
                     )}
@@ -284,21 +282,21 @@ export default function SettingsPage() {
 
                 {/* API Token Warning */}
                 {useAiClassification && (
-                  <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                     <div className="flex items-start gap-3">
                       <span className="text-xl">⚠️</span>
                       <div className="flex-1">
-                        <p className="text-yellow-400 font-semibold mb-1 text-sm">
+                        <p className="text-yellow-400/80 font-semibold mb-1 text-sm">
                           API Token Usage
                         </p>
-                        <p className="text-xs text-gray-300">
+                        <p className="text-xs text-white/60">
                           AI classification uses Gemini API tokens for each bug detected.
                           Monitor your usage in the{" "}
                           <a
                             href="https://aistudio.google.com/apikey"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300 underline"
+                            className="text-white/80 hover:text-white underline"
                           >
                             Google AI Studio
                           </a>
@@ -311,14 +309,14 @@ export default function SettingsPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-cyan-500/10 my-6"></div>
+              <div className="border-t border-white/10 my-6"></div>
 
               {/* Use Improved Fixer */}
               <div className="mt-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
                         🔧
                       </div>
                       <div>
@@ -328,29 +326,29 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`inline-block w-2 h-2 rounded-full ${
-                              useImprovedFixer ? "bg-green-500" : "bg-gray-500"
+                              useImprovedFixer ? "bg-green-500" : "bg-white/30"
                             }`}
                           ></span>
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-white/50">
                             {useImprovedFixer ? "Enabled" : "Disabled"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
+                    <p className="text-white/50 text-sm mt-4 leading-relaxed">
                       Enable advanced fixing with code diffs, chunking, and incremental fixes. More accurate but experimental.
                     </p>
 
                     {/* Feature Cards */}
                     <div className="mt-6 grid grid-cols-2 gap-4">
                       {/* Standard Fixer */}
-                      <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-gray-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/60 mb-2 flex items-center gap-2 text-sm">
                           <span>📝</span>
                           <span>Standard Fixer</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>Basic fixes</span>
@@ -367,12 +365,12 @@ export default function SettingsPage() {
                       </div>
 
                       {/* Improved Fixer */}
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-red-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/80 mb-2 flex items-center gap-2 text-sm">
                           <span>⚡</span>
                           <span>Improved Fixer</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>Code diffs & chunking</span>
@@ -412,13 +410,13 @@ export default function SettingsPage() {
                       disabled={saving}
                       className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
                         useImprovedFixer
-                          ? "bg-gradient-to-r from-red-500 to-orange-500"
-                          : "bg-gray-700"
+                          ? "bg-white"
+                          : "bg-white/20"
                       } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          useImprovedFixer ? "translate-x-10" : "translate-x-1"
+                        className={`inline-block h-8 w-8 transform rounded-full shadow-lg transition-transform ${
+                          useImprovedFixer ? "translate-x-10 bg-black" : "translate-x-1 bg-white"
                         }`}
                       />
                     </button>
@@ -427,14 +425,14 @@ export default function SettingsPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-cyan-500/10 my-6"></div>
+              <div className="border-t border-white/10 my-6"></div>
 
               {/* Test Fixes Before Applying */}
               <div className="mt-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
                         🧪
                       </div>
                       <div>
@@ -444,36 +442,36 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`inline-block w-2 h-2 rounded-full ${
-                              testFixesBeforeApply ? "bg-green-500" : "bg-gray-500"
+                              testFixesBeforeApply ? "bg-green-500" : "bg-white/30"
                             }`}
                           ></span>
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-white/50">
                             {testFixesBeforeApply ? "Enabled" : "Disabled"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
+                    <p className="text-white/50 text-sm mt-4 leading-relaxed">
                       Test fixes in isolated environment before creating PRs. Prevents bad fixes from going live.
-                      <span className="text-green-400 font-semibold"> Recommended: ON</span>
+                      <span className="text-green-400/80 font-semibold"> Recommended: ON</span>
                     </p>
 
                     {/* Feature Cards */}
                     <div className="mt-6 grid grid-cols-2 gap-4">
                       {/* Without Testing */}
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-red-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/60 mb-2 flex items-center gap-2 text-sm">
                           <span>⚠️</span>
                           <span>Without Testing</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
+                            <span className="text-red-400">✗</span>
                             <span>Bad fixes may go live</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
+                            <span className="text-red-400">✗</span>
                             <span>Risk of breaking code</span>
                           </li>
                           <li className="flex items-start gap-2">
@@ -484,12 +482,12 @@ export default function SettingsPage() {
                       </div>
 
                       {/* With Testing */}
-                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-green-400 mb-2 flex items-center gap-2 text-sm">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div className="font-semibold text-white/80 mb-2 flex items-center gap-2 text-sm">
                           <span>✅</span>
                           <span>With Testing</span>
                         </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
+                        <ul className="space-y-1.5 text-xs text-white/60">
                           <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>Validated fixes only</span>
@@ -529,13 +527,13 @@ export default function SettingsPage() {
                       disabled={saving}
                       className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
                         testFixesBeforeApply
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                          : "bg-gray-700"
+                          ? "bg-white"
+                          : "bg-white/20"
                       } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          testFixesBeforeApply ? "translate-x-10" : "translate-x-1"
+                        className={`inline-block h-8 w-8 transform rounded-full shadow-lg transition-transform ${
+                          testFixesBeforeApply ? "translate-x-10 bg-black" : "translate-x-1 bg-white"
                         }`}
                       />
                     </button>

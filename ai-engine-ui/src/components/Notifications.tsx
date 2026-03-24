@@ -44,13 +44,21 @@ export function Notifications() {
 
   const clearAll = async () => {
     if (!confirm('Are you sure you want to clear all notifications?')) return;
+    
+    // Optimistic update
+    const previousNotifications = [...notifications];
+    setNotifications([]);
+    
     try {
       const response = await fetch('http://localhost:8000/notifications', { method: 'DELETE' });
-      if (response.ok) {
-        setNotifications([]);
+      if (!response.ok) {
+        throw new Error('Failed to clear notifications');
       }
     } catch (error) {
       console.error('Failed to clear notifications:', error);
+      // Revert if failed
+      setNotifications(previousNotifications);
+      alert('Failed to clear notifications. Please try again.');
     }
   };
 

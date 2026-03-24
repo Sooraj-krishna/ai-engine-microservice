@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, Home as HomeIcon, Info, List, BarChart2, History as HistoryIcon, Mail, Settings, Bug } from 'lucide-react';
+import { X, Home as HomeIcon, BarChart2, History as HistoryIcon, Settings, Bug } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -12,13 +12,10 @@ interface MenuOverlayProps {
 
 const menuItems = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'About', href: '/about', icon: Info },
-  { name: 'Features', href: '/features', icon: List },
   { name: 'Analysis', href: '/analysis', icon: BarChart2 },
   { name: 'Bug Review', href: '/bugs', icon: Bug },
   { name: 'History', href: '/history', icon: HistoryIcon },
   { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Contact', href: '/contact', icon: Mail },
 ];
 
 export function MenuOverlay({ isOpen, onClose }: MenuOverlayProps) {
@@ -57,24 +54,24 @@ export function MenuOverlay({ isOpen, onClose }: MenuOverlayProps) {
             className="fixed left-0 top-0 h-full w-80 z-[101]"
           >
             {/* Glassmorphism container */}
-            <div className="h-full bg-black/40 backdrop-blur-xl border-r border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
+            <div className="h-full bg-black/40 backdrop-blur-xl border-r border-white/10 shadow-2xl shadow-white/5">
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-6 right-6 p-2 rounded-lg bg-zinc-900/50 border border-zinc-700 hover:border-cyan-500/50 text-white transition-all group"
+                className="absolute top-6 right-6 p-2 rounded-full bg-white/5 border border-white/10 hover:border-white/20 text-white transition-all group"
                 aria-label="Close menu"
               >
-                <X className="h-5 w-5 text-cyan-400 group-hover:rotate-90 transition-transform duration-300" />
+                <X className="h-5 w-5 text-white group-hover:rotate-90 transition-transform duration-300" />
               </button>
 
               {/* Menu content */}
               <div className="flex flex-col h-full px-8 py-12">
                 {/* Logo/Header */}
                 <div className="mb-12">
-                  <h2 className="text-2xl font-bold uppercase tracking-wider text-cyan-400">
+                  <h2 className="text-2xl font-bold uppercase tracking-wider text-white">
                     Menu
                   </h2>
-                  <div className="h-0.5 w-16 bg-gradient-to-r from-cyan-500 to-transparent mt-2" />
+                  <div className="h-0.5 w-16 bg-gradient-to-r from-white to-transparent mt-2" />
                 </div>
 
                 {/* Navigation items */}
@@ -91,9 +88,9 @@ export function MenuOverlay({ isOpen, onClose }: MenuOverlayProps) {
                         onClick={onClose}
                         className="block group"
                       >
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-zinc-900/30 border border-transparent hover:border-cyan-500/30 hover:bg-cyan-950/20 transition-all duration-300">
-                          <item.icon className="h-5 w-5 text-cyan-400" />
-                          <span className="text-white text-lg font-semibold uppercase tracking-wide group-hover:text-cyan-400 transition-colors">
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-white/5 border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-300">
+                          <item.icon className="h-5 w-5 text-white/70" />
+                          <span className="text-white text-lg font-semibold uppercase tracking-wide group-hover:text-white/90 transition-colors">
                             {item.name}
                           </span>
                         </div>
@@ -112,15 +109,15 @@ export function MenuOverlay({ isOpen, onClose }: MenuOverlayProps) {
                   <Link
                     href="/analysis"
                     onClick={onClose}
-                    className="block w-full px-6 py-4 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-bold uppercase tracking-wider text-center rounded-lg shadow-lg shadow-cyan-950/50 transition-all transform hover:scale-105"
+                    className="block w-full px-6 py-4 bg-white text-black hover:bg-gray-100 font-bold uppercase tracking-wider text-center rounded-full shadow-lg transition-all transform hover:scale-105"
                   >
                     Start Analyzing
                   </Link>
                 </motion.div>
 
                 {/* Footer info */}
-                <div className="mt-6 pt-6 border-t border-zinc-700/50">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <p className="text-xs text-white/30 uppercase tracking-wider">
                     AI Engine v2.0
                   </p>
                 </div>

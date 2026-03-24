@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ConfigurationForm } from '@/components/ConfigurationForm';
 import { StatusMonitor } from '@/components/StatusMonitor';
-import { LogsDisplay } from '@/components/LogsDisplay';
+
 import FeatureImplementationStatus from '@/components/FeatureImplementationStatus';
 import FeatureRecommendations from '@/components/FeatureRecommendations';
 import { ChatWidget } from '@/components/ChatWidget';
@@ -13,7 +13,7 @@ import { AnimatedSection } from '@/components/shared/AnimatedSection';
 
 export default function AnalysisPage() {
   const [systemStatus, setSystemStatus] = useState<any>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+
   const [features, setFeatures] = useState<any[]>([]);
 
   useEffect(() => {
@@ -25,61 +25,7 @@ export default function AnalysisPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // WebSocket connection for real-time logs
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout;
 
-    const connectWebSocket = () => {
-      try {
-        ws = new WebSocket('ws://localhost:8000/ws/logs');
-        
-        ws.onopen = () => {
-          console.log('[WebSocket] Connected to log stream');
-        };
-        
-        ws.onmessage = (event) => {
-          try {
-            // Try parsing as JSON first (for future compatibility)
-            const data = JSON.parse(event.data);
-            if (data.log) {
-              setLogs(prev => [...prev, data.log]);
-            } else if (data.message) {
-              setLogs(prev => [...prev, data.message]);
-            }
-          } catch (error) {
-            // Not JSON, treat as plain text log message
-            if (event.data && typeof event.data === 'string' && event.data.trim()) {
-              setLogs(prev => [...prev, event.data]);
-            }
-          }
-        };
-        
-        ws.onerror = (error) => {
-          console.error('[WebSocket] Error:', error);
-        };
-        
-        ws.onclose = () => {
-          console.log('[WebSocket] Disconnected. Reconnecting in 5 seconds...');
-          reconnectTimeout = setTimeout(connectWebSocket, 5000);
-        };
-      } catch (error) {
-        console.error('[WebSocket] Connection failed:', error);
-        reconnectTimeout = setTimeout(connectWebSocket, 5000);
-      }
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-    };
-  }, []);
 
   const fetchStatus = async () => {
     try {
@@ -110,7 +56,7 @@ export default function AnalysisPage() {
             <h1 className="text-5xl md:text-6xl font-bold uppercase tracking-wider text-white mb-4">
               AI Engine <span className="text-red-gradient">Dashboard</span>
             </h1>
-            <p className="text-xl text-zinc-400">
+            <p className="text-xl text-white/50">
               Monitor, analyze, and maintain your codebase in real-time
             </p>
           </div>
@@ -122,7 +68,7 @@ export default function AnalysisPage() {
           {/* Column 1: Config & Notifications */}
           <div className="space-y-8">
             <AnimatedSection delay={0.1}>
-              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+              <div className="dark-card p-6 smooth-transition">
                 <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
                   AI Engine Configuration
                 </h2>
@@ -134,7 +80,7 @@ export default function AnalysisPage() {
             </AnimatedSection>
 
             <AnimatedSection delay={0.22}>
-              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+              <div className="dark-card p-6 smooth-transition">
                 <Notifications />
               </div>
             </AnimatedSection>
@@ -143,7 +89,7 @@ export default function AnalysisPage() {
           {/* Column 2: Status & Task Queue */}
           <div className="space-y-8">
             <AnimatedSection delay={0.2}>
-              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+              <div className="dark-card p-6 smooth-transition">
                 <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
                   System Status
                 </h2>
@@ -152,7 +98,7 @@ export default function AnalysisPage() {
             </AnimatedSection>
 
             <AnimatedSection delay={0.25}>
-              <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+              <div className="dark-card p-6 smooth-transition">
                 <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
                   Background Task Queue
                 </h2>
@@ -162,19 +108,11 @@ export default function AnalysisPage() {
           </div>
         </div>
 
-        {/* Real-time Logs */}
-        <AnimatedSection delay={0.3}>
-          <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
-            <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
-              Real-Time Logs
-            </h2>
-            <LogsDisplay logs={logs} />
-          </div>
-        </AnimatedSection>
+
 
         {/* Feature Implementation Status */}
         <AnimatedSection delay={0.4}>
-          <div className="dark-card rounded-lg p-6 smooth-transition hover:border-cyan-700/50">
+          <div className="dark-card p-6 smooth-transition">
             <h2 className="text-2xl font-bold text-red-gradient mb-4 uppercase tracking-wide">
               Feature Implementation Status
             </h2>
