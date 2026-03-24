@@ -58,6 +58,7 @@ graph TD
 <img width="1366" height="768" alt="Screenshot from 2026-03-25 00-13-08" src="https://github.com/user-attachments/assets/c98ce6e0-bdaa-4b57-9de5-0973ce129e95" />
 <img width="1366" height="768" alt="Screenshot from 2026-03-25 00-13-14" src="https://github.com/user-attachments/assets/735520b6-33c2-48d6-b398-289fdd0afc3a" />
 <img width="1366" height="768" alt="Screenshot from 2026-03-25 00-13-20" src="https://github.com/user-attachments/assets/5e3b72d1-0f2c-4e9b-852d-44922ad0eaa2" />
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/4b10c310-3131-4eb2-8cee-69aaa20aa313" />
 
 
 ## 💡 Key Features
