@@ -1,6 +1,6 @@
 [
   {
-    "id": "bug_20260318_140130_340690",
+    "id": "bug_20260506_031201_120936",
     "bug": {
       "type": "dependency_vulnerability",
       "severity": "critical",
@@ -30,99 +30,47 @@
     "severity": "critical",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340717",
+    "detected_at": "2026-05-06T03:12:01.120957",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,
     "error": null
   },
   {
-    "id": "bug_20260318_140130_340721",
+    "id": "bug_20260506_031201_120962",
     "bug": {
-      "type": "test_framework_error",
-      "severity": "high",
-      "description": "Accessibility testing encountered an error",
-      "details": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://buggy-cart-testing-web-application-chi.vercel.app/\", waiting until \"networkidle\"\n",
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Interactive element missing accessible label (found in 1 file(s))",
+      "details": "button element (id: no-id) has no accessible label",
       "framework": "nextjs",
       "language": "javascript",
       "target_file": "index.html",
       "data": {
-        "type": "Test Framework Error",
-        "description": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://buggy-cart-testing-web-application-chi.vercel.app/\", waiting until \"networkidle\"\n"
-      },
-      "safe_mode": true,
-      "requires_approval": true
-    },
-    "severity": "high",
-    "requires_approval": true,
-    "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340724",
-    "approved_at": null,
-    "processing_started_at": null,
-    "completed_at": null,
-    "error": null
-  },
-  {
-    "id": "bug_20260318_140130_340726",
-    "bug": {
-      "type": "test_framework_error",
-      "severity": "high",
-      "description": "Responsive testing encountered an error",
-      "details": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://buggy-cart-testing-web-application-chi.vercel.app/\", waiting until \"networkidle\"\n",
-      "framework": "nextjs",
-      "language": "javascript",
-      "target_file": "index.html",
-      "data": {
-        "type": "Test Framework Error",
-        "description": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://buggy-cart-testing-web-application-chi.vercel.app/\", waiting until \"networkidle\"\n"
-      },
-      "safe_mode": true,
-      "requires_approval": true
-    },
-    "severity": "high",
-    "requires_approval": true,
-    "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340728",
-    "approved_at": null,
-    "processing_started_at": null,
-    "completed_at": null,
-    "error": null
-  },
-  {
-    "id": "bug_20260318_140130_340730",
-    "bug": {
-      "type": "javascript_error",
-      "severity": "high",
-      "description": "JavaScript console error detected (found in 1 file(s))",
-      "details": "Console error: Failed to load resource: net::ERR_CONNECTION_RESET",
-      "framework": "nextjs",
-      "language": "javascript",
-      "target_file": "app.js",
-      "data": {
-        "type": "Console Error",
-        "error": "Failed to load resource: net::ERR_CONNECTION_RESET",
-        "nodes_affected": 8,
+        "type": "Missing Accessible Label",
+        "element": "button",
+        "nodes_affected": 14,
         "files_affected": 1
       },
       "safe_mode": true,
-      "requires_approval": true,
+      "requires_approval": false,
       "affected_files": [
-        "app.js"
+        "index.html"
       ],
       "consolidated": true,
-      "original_count": 8
+      "original_count": 14
     },
-    "severity": "high",
+    "severity": "medium",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340732",
+    "detected_at": "2026-05-06T03:12:01.120966",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,
     "error": null
   },
   {
-    "id": "bug_20260318_140130_340738",
+    "id": "bug_20260506_031201_120968",
     "bug": {
       "type": "responsive",
       "severity": "medium",
@@ -142,41 +90,7 @@
     "severity": "medium",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340740",
-    "approved_at": null,
-    "processing_started_at": null,
-    "completed_at": null,
-    "error": null
-  },
-  {
-    "id": "bug_20260318_140130_340742",
-    "bug": {
-      "type": "accessibility",
-      "severity": "medium",
-      "description": "Lighthouse accessibility score: 79/100 (found in 1 file(s))",
-      "details": "Accessibility score is below 90. Check for missing alt text, ARIA labels, and proper semantic HTML.",
-      "framework": "nextjs",
-      "language": "javascript",
-      "target_file": "index.html",
-      "data": {
-        "type": "Accessibility Issues",
-        "score": 79.0,
-        "threshold": 90,
-        "nodes_affected": 4,
-        "files_affected": 1
-      },
-      "safe_mode": true,
-      "requires_approval": false,
-      "affected_files": [
-        "index.html"
-      ],
-      "consolidated": true,
-      "original_count": 4
-    },
-    "severity": "medium",
-    "requires_approval": true,
-    "status": "detected",
-    "detected_at": "2026-03-18T14:01:30.340744",
+    "detected_at": "2026-05-06T03:12:01.120971",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,

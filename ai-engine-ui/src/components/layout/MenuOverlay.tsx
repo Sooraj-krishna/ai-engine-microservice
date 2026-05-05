@@ -22,108 +22,77 @@ const menuItems = [
 ];
 
 export function MenuOverlay({ isOpen, onClose }: MenuOverlayProps) {
-  // Lock body scroll when menu is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
           />
 
-          {/* Left-side glass menu panel */}
           <motion.div
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed left-0 top-0 h-full w-80 z-[101]"
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed left-0 top-0 h-full w-full md:w-96 z-[101]"
           >
-            {/* Glassmorphism container */}
-            <div className="h-full bg-black/40 backdrop-blur-xl border-r border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-6 right-6 p-2 rounded-lg bg-zinc-900/50 border border-zinc-700 hover:border-cyan-500/50 text-white transition-all group"
-                aria-label="Close menu"
-              >
-                <X className="h-5 w-5 text-cyan-400 group-hover:rotate-90 transition-transform duration-300" />
-              </button>
-
-              {/* Menu content */}
-              <div className="flex flex-col h-full px-8 py-12">
-                {/* Logo/Header */}
-                <div className="mb-12">
-                  <h2 className="text-2xl font-bold uppercase tracking-wider text-cyan-400">
-                    Menu
-                  </h2>
-                  <div className="h-0.5 w-16 bg-gradient-to-r from-cyan-500 to-transparent mt-2" />
+            <div className="h-full bg-black/90 backdrop-blur-2xl border-r border-white/5 p-8 flex flex-col overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-12 flex-shrink-0">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                    <span className="text-black font-black text-[8px]">AI</span>
+                  </div>
+                  <span className="text-white font-black tracking-widest text-xs">MENU</span>
                 </div>
+                <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-all">
+                  <X className="h-5 w-5 text-zinc-500" />
+                </button>
+              </div>
 
-                {/* Navigation items */}
-                <nav className="flex-1 space-y-2">
-                  {menuItems.map((item, index) => (
-                    <motion.div
-                      key={item.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={onClose}
-                        className="block group"
-                      >
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-zinc-900/30 border border-transparent hover:border-cyan-500/30 hover:bg-cyan-950/20 transition-all duration-300">
-                          <item.icon className="h-5 w-5 text-cyan-400" />
-                          <span className="text-white text-lg font-semibold uppercase tracking-wide group-hover:text-cyan-400 transition-colors">
-                            {item.name}
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </nav>
-
-                {/* CTA Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="mt-auto"
-                >
-                  <Link
-                    href="/analysis"
-                    onClick={onClose}
-                    className="block w-full px-6 py-4 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-bold uppercase tracking-wider text-center rounded-lg shadow-lg shadow-cyan-950/50 transition-all transform hover:scale-105"
+              <nav className="flex-1 space-y-2 mb-8">
+                {menuItems.map((item, index) => (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    Start Analyzing
-                  </Link>
-                </motion.div>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className="group flex items-center space-x-4 p-4 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
+                    >
+                      <item.icon className="h-5 w-5 text-zinc-500 group-hover:text-white transition-colors" />
+                      <span className="text-zinc-400 group-hover:text-white text-sm font-bold uppercase tracking-widest transition-colors">
+                        {item.name}
+                      </span>
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
 
-                {/* Footer info */}
-                <div className="mt-6 pt-6 border-t border-zinc-700/50">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">
-                    AI Engine v2.0
-                  </p>
-                </div>
+              <div className="mt-auto pt-8 border-t border-white/5 flex-shrink-0">
+                <Link
+                  href="/analysis"
+                  onClick={onClose}
+                  className="block w-full py-4 bg-white text-black text-center text-xs font-black uppercase tracking-[0.2em] rounded-full hover:bg-zinc-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
+                >
+                  Start Analysis
+                </Link>
+                <p className="mt-8 text-[10px] text-zinc-600 uppercase tracking-widest font-bold text-center">
+                  AI Engine Core v2.0
+                </p>
               </div>
             </div>
           </motion.div>

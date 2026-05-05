@@ -24,10 +24,14 @@ else
         
         # Install npm dependencies
         echo "📦 Installing npm dependencies (axe-core, lighthouse)..."
+        # Run from root to use the package.json there
+        ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+        cd "$ROOT_DIR"
         npm install --save-dev @axe-core/playwright lighthouse 2>/dev/null || {
             echo "⚠️  npm install failed. Trying with npx (will be slower but works)..."
             echo "   The system will use fallback methods if packages are not available."
         }
+
         
         echo ""
         echo "✅ Enhanced testing dependencies setup complete!"

@@ -1,0 +1,23 @@
+services:
+  # AI Engine Backend (FastAPI)
+  - type: web
+    name: ai-engine-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main_with_config:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 8000
+      - key: FRONTEND_URL
+        sync: false # Set this to your Vercel URL after deployment
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+
+  # Redis for Celery
+  - type: redis
+    name: ai-engine-redis
+    ipAllowList: [] # Only allow internal connections

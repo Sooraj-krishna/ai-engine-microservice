@@ -8,9 +8,10 @@ import os
 from pathlib import Path
 
 # Add src to path
-src_path = str(Path(__file__).parent.parent)
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"))
 if src_path not in sys.path:
     sys.path.append(src_path)
+
 
 from framework_validator import framework_validator
 

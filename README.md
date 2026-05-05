@@ -52,6 +52,48 @@ graph TD
 - Screenshots OR
 - Loom video (2–3 min walkthrough)
 
+## 🚀 Deployment
+
+### Backend (Render)
+1. Connect your GitHub repository to [Render](https://render.com).
+2. Render will automatically detect the `render.yaml` file.
+3. Configure the following environment variables in the Render dashboard:
+   - `GEMINI_API_KEY`: Your Google Gemini API key.
+   - `GITHUB_TOKEN`: Your GitHub personal access token.
+   - `WEBSITE_URL`: The URL of the website you want to monitor.
+   - `FRONTEND_URL`: Your Vercel deployment URL (e.g., `https://your-app.vercel.app`).
+4. Render will provision the FastAPI service and a Redis instance for background tasks.
+
+### Frontend (Vercel)
+1. Connect your GitHub repository to [Vercel](https://vercel.com).
+2. Set the **Root Directory** to `ai-engine-ui`.
+3. Add the following environment variable:
+   - `NEXT_PUBLIC_API_URL`: Your Render backend URL (e.g., `https://ai-engine-backend.onrender.com`).
+4. Deploy!
+
+## 📂 Project Structure
+
+
+```text
+.
+├── src/                    # Backend source code (FastAPI, Celery workers)
+│   ├── data/               # Application-specific data (DBs, sessions)
+│   ├── feature_implementations/ # AI-generated feature plans
+│   └── ...                 # Core logic modules
+├── tests/                  # Test suites (unit, integration, e2e)
+├── documentation/          # Project documentation
+│   ├── business/           # Proposals and presentations
+│   └── debug/              # Debugging logs and guides
+├── scripts/                # Utility scripts (setup, startup, services)
+├── ai-engine-ui/           # Frontend Next.js application
+├── data/                   # Shared/Persistent data (logs, queue)
+├── secrets/                # Sensitive keys (ignored by git)
+├── Dockerfile              # Container definition
+├── docker-compose.yml      # Orchestration for Redis/Worker/App
+├── requirements.txt        # Python dependencies
+└── package.json            # Testing-specific npm dependencies
+```
+
 ## 💡 Key Features
 - **Automated issue detection and fixing:** Continuously monitors for broken links, UI/UX bugs, and console errors, automatically generating and testing code fixes.
 - **Security and performance analysis (6 vulnerability categories):** Scans the repository for hardcoded credentials, SQL injections, large bundle sizes, and memory leaks.

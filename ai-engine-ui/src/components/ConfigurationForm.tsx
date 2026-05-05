@@ -1,4 +1,6 @@
 'use client';
+import { API_BASE_URL, WS_BASE_URL } from '@/lib/config';
+
 
 import { useState, useEffect } from 'react';
 import { Play, Settings, CheckCircle, AlertCircle } from 'lucide-react';
@@ -21,7 +23,7 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('http://localhost:8000/config');
+        const response = await fetch(`${API_BASE_URL}/config`);
         if (response.ok) {
           const config = await response.json();
           setFormData(prev => ({
@@ -60,7 +62,7 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
 
     try {
       // Test connection to the AI Engine
-      const response = await fetch('http://localhost:8000/health');
+      const response = await fetch(`${API_BASE_URL}/health`);
       if (response.ok) {
         setStatus('success');
         setMessage('✅ Successfully connected to AI Engine!');
@@ -84,7 +86,7 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
 
     try {
       // Save configuration to the AI Engine
-      const response = await fetch('http://localhost:8000/configure', {
+      const response = await fetch(`${API_BASE_URL}/configure`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +123,7 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
     
 
     try {
-      const response = await fetch('http://localhost:8000/run', {
+      const response = await fetch(`${API_BASE_URL}/run`, {
         method: 'POST',
       });
 
@@ -193,37 +195,37 @@ export function ConfigurationForm({ onConfigured, onStatusUpdate }: Configuratio
         <button
           onClick={testConnection}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white rounded-lg transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/10 text-zinc-400 hover:text-white rounded-lg transition-all disabled:opacity-50"
         >
           <Settings className="h-4 w-4" />
-          <span className="font-bold uppercase tracking-wider text-xs">Test Connection</span>
+          <span className="font-bold uppercase tracking-wider text-[10px]">Test Connection</span>
         </button>
 
         <button
           onClick={saveConfiguration}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-700 hover:bg-green-600 border border-green-800 hover:border-green-700 text-white rounded-lg transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 hover:border-white/20 text-white rounded-lg transition-all disabled:opacity-50"
         >
           <CheckCircle className="h-4 w-4" />
-          <span className="font-bold uppercase tracking-wider text-xs">Save Config</span>
+          <span className="font-bold uppercase tracking-wider text-[10px]">Save Config</span>
         </button>
 
         <button
           onClick={triggerMaintenance}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-red-600 hover:to-red-500 text-white rounded-lg transition-all shadow-lg shadow-cyan-950/50 disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white text-black hover:bg-zinc-200 border border-white rounded-lg transition-all shadow-lg shadow-white/5 disabled:opacity-50"
         >
           <Play className="h-4 w-4" />
-          <span className="font-bold uppercase tracking-wider text-xs">Run Maintenance</span>
+          <span className="font-bold uppercase tracking-wider text-[10px]">Run Maintenance</span>
         </button>
       </div>
 
       {/* Status Message */}
       {message && (
         <div className={`p-3 rounded-lg border ${
-          status === 'success' ? 'bg-green-950/50 text-green-400 border-green-800/50' :
-          status === 'error' ? 'bg-cyan-950/50 text-cyan-400 border-cyan-800/50' :
-          'bg-blue-950/50 text-blue-400 border-blue-800/50'
+          status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+          status === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+          'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
         }`}>
           <div className="flex items-center space-x-2 font-mono text-sm">
             {status === 'success' && <CheckCircle className="h-4 w-4" />}

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/config';
 import React, { useEffect, useState } from 'react';
 import { 
   Bell, 
@@ -7,11 +8,11 @@ import {
   AlertTriangle, 
   AlertOctagon, 
   Info, 
-  ExternalLink,
-  Clock,
+  Clock, 
   RefreshCw,
   Trash2,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react';
 
 interface Notification {
@@ -25,15 +26,13 @@ interface Notification {
 export function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:8000/notifications?limit=20');
+      const response = await fetch(`${API_BASE_URL}/notifications?limit=15`);
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
-        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -42,21 +41,9 @@ export function Notifications() {
     }
   };
 
-  const clearAll = async () => {
-    if (!confirm('Are you sure you want to clear all notifications?')) return;
-    try {
-      const response = await fetch('http://localhost:8000/notifications', { method: 'DELETE' });
-      if (response.ok) {
-        setNotifications([]);
-      }
-    } catch (error) {
-      console.error('Failed to clear notifications:', error);
-    }
-  };
-
   const clearItem = async (timestamp: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/notifications/item?timestamp=${encodeURIComponent(timestamp)}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/notifications/item?timestamp=${encodeURIComponent(timestamp)}`, { method: 'DELETE' });
       if (response.ok) {
         setNotifications(prev => prev.filter(n => n.timestamp !== timestamp));
       }
@@ -67,117 +54,72 @@ export function Notifications() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000); // Poll every 10 seconds
+    const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const getIcon = (severity: string) => {
+  const getSeverityIcon = (severity: string) => {
     switch (severity.toLowerCase()) {
-      case 'success': return <CheckCircle className="h-5 w-5 text-green-400" />;
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-400" />;
+      case 'success': return <CheckCircle className="h-3 w-3 text-white" />;
+      case 'warning': return <AlertTriangle className="h-3 w-3 text-white" />;
       case 'critical':
-      case 'high': return <AlertOctagon className="h-5 w-5 text-red-500" />;
-      default: return <Info className="h-5 w-5 text-blue-400" />;
-    }
-  };
-
-  const getSeverityStyle = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'success': return 'border-green-900/30 bg-green-950/10';
-      case 'warning': return 'border-yellow-900/30 bg-yellow-950/10';
-      case 'critical':
-      case 'high': return 'border-red-900/30 bg-red-950/20';
-      default: return 'border-blue-900/30 bg-blue-950/10';
+      case 'high': return <AlertOctagon className="h-3 w-3 text-white" />;
+      default: return <Info className="h-3 w-3 text-white" />;
     }
   };
 
   if (isLoading && notifications.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <RefreshCw className="h-6 w-6 text-cyan-400 animate-spin mr-3" />
-        <span className="text-zinc-500 font-mono uppercase tracking-widest text-sm">Synchronizing alerts...</span>
+      <div className="flex flex-col items-center justify-center py-12 text-zinc-800">
+        <RefreshCw className="h-5 w-5 animate-spin mb-3" />
+        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Syncing Alerts...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <Bell className="h-5 w-5 text-red-gradient" />
-          <h3 className="text-lg font-bold text-white uppercase tracking-wider">System Alerts</h3>
+    <div className="space-y-1">
+      {notifications.length === 0 ? (
+        <div className="py-12 text-center border border-white/5 rounded-2xl bg-white/[0.01]">
+          <Bell className="h-6 w-6 mx-auto mb-4 text-zinc-800" />
+          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">No active alerts recorded</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={clearAll}
-            className="flex items-center text-[10px] text-zinc-500 hover:text-red-400 uppercase tracking-tighter transition-colors group"
-            title="Clear All"
+      ) : (
+        notifications.map((notif, idx) => (
+          <div 
+            key={idx} 
+            className="group relative flex items-start gap-4 p-4 rounded-xl hover:bg-white/[0.03] transition-all border border-transparent hover:border-white/5"
           >
-            <Trash2 className="h-3 w-3 mr-1 group-hover:animate-pulse" />
-            Clear All
-          </button>
-          <div className="flex items-center text-[10px] text-zinc-500 uppercase tracking-tighter border-l border-zinc-800 pl-4">
-            <Clock className="h-3 w-3 mr-1" />
-            Last update: {lastUpdated.toLocaleTimeString()}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar space-y-3">
-        {notifications.length === 0 ? (
-          <div className="text-center py-12 border border-zinc-800 rounded-lg bg-zinc-900/20">
-            <Info className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-            <p className="text-zinc-500 text-sm uppercase tracking-widest">No recent notifications</p>
-          </div>
-        ) : (
-          notifications.map((notif, idx) => (
-            <div 
-              key={idx} 
-              className={`p-4 rounded-lg border flex items-start space-x-4 transition-all hover:border-zinc-700 relative group/item ${getSeverityStyle(notif.severity)}`}
-            >
-              <button 
-                onClick={() => clearItem(notif.timestamp)}
-                className="absolute top-2 right-2 p-1 text-zinc-600 hover:text-white opacity-0 group-hover/item:opacity-100 transition-opacity"
-                title="Dismiss"
-              >
-                <X className="h-3 w-3" />
-              </button>
-              <div className="mt-1 flex-shrink-0">
-                {getIcon(notif.severity)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-1">
-                  <span className={`text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${
-                    notif.severity === 'success' ? 'text-green-400 border-green-900/50' :
-                    notif.severity === 'warning' ? 'text-yellow-400 border-yellow-900/50' :
-                    notif.severity === 'critical' || notif.severity === 'high' ? 'text-red-400 border-red-900/50' :
-                    'text-blue-400 border-blue-900/50'
-                  }`}>
-                    {notif.type.replace('_', ' ')}
-                  </span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    {new Date(notif.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-                <p className="text-zinc-300 text-sm leading-relaxed mb-2">
-                  {notif.message}
-                </p>
-                
-                {notif.data?.pr_url && (
-                  <a 
-                    href={notif.data.pr_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-xs text-cyan-400 hover:text-cyan-300 transition-colors uppercase font-bold tracking-tighter"
-                  >
-                    View Pull Request <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                )}
-              </div>
+            <div className="mt-1 relative shrink-0">
+              {getSeverityIcon(notif.severity)}
+              {notif.severity === 'critical' && (
+                <div className="absolute -top-1 -right-1 w-1 h-1 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]" />
+              )}
             </div>
-          ))
-        )}
-      </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-white transition-colors">
+                  System Notification · {notif.type.replace(/_/g, ' ')}
+                </span>
+                <span className="text-[8px] font-bold text-zinc-700 tabular-nums">
+                  {new Date(notif.timestamp).toLocaleTimeString([], { hour12: false })}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed font-light group-hover:text-zinc-300 transition-colors">
+                {notif.message}
+              </p>
+            </div>
+
+            <button 
+              onClick={() => clearItem(notif.timestamp)}
+              className="opacity-0 group-hover:opacity-100 p-1 hover:text-white text-zinc-700 transition-all"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))
+      )}
     </div>
   );
 }

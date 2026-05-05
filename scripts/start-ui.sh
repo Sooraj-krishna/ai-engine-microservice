@@ -23,19 +23,23 @@ fi
 
 echo "✅ Prerequisites check passed"
 
+# Get the project root directory
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
 # Install UI dependencies if needed
 if [ ! -d "ai-engine-ui/node_modules" ]; then
     echo "📦 Installing UI dependencies..."
     cd ai-engine-ui
     npm install
-    cd ..
+    cd "$ROOT_DIR"
 fi
 
 echo "🔧 Starting AI Engine Backend..."
 cd src
 python3 main_with_config.py &
 BACKEND_PID=$!
-cd ..
+cd "$ROOT_DIR"
 
 echo "⏳ Waiting for backend to start..."
 sleep 5
@@ -44,7 +48,8 @@ echo "🌐 Starting Web UI..."
 cd ai-engine-ui
 npm run dev &
 UI_PID=$!
-cd ..
+cd "$ROOT_DIR"
+
 
 echo ""
 echo "🎉 AI Engine Microservice is now running!"

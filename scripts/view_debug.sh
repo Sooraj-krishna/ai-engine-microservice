@@ -8,9 +8,13 @@ echo "Code Generation Debug Viewer"
 echo "======================================"
 echo ""
 
+# Get the project root directory (one level up from scripts/)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
 # Check if debug directories exist
 if [ ! -d "data/raw_generated_code" ]; then
-    echo "❌ Debug directory not found: data/raw_generated_code"
+    echo "❌ Debug directory not found: $ROOT_DIR/data/raw_generated_code"
     echo "Run: mkdir -p data/raw_generated_code data/validation_results"
     exit 1
 fi

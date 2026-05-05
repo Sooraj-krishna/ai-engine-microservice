@@ -5,7 +5,9 @@ Tests the industry detection and adaptive feature discovery system.
 """
 
 import sys
-sys.path.append('src')
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from industry_detector import industry_detector
 from nlp_feature_discovery import nlp_discoverer

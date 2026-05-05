@@ -5,7 +5,9 @@ Tests the change detection system.
 """
 
 import sys
-sys.path.append('src')
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from change_detector import change_detector
 from feature_store import feature_store

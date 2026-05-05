@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { API_BASE_URL, WS_BASE_URL } from '@/lib/config';
 
-export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /**
  * Proxy endpoint to call Python backend's Gemini API
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     // Call Python backend's Gemini endpoint
-    const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_URL ?? API_BASE_URL;
     const resp = await fetch(`${backendUrl}/api/gemini`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

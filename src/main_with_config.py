@@ -95,9 +95,16 @@ async def startup_event():
     print("[INFO] Queue processor started for automated bug fixes")
 
 # Add CORS middleware for the web UI
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    frontend_url
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1208,7 +1215,8 @@ async def generate_plan_for_feature(feature_id: str):
 
 class ChatMessageRequest(BaseModel):
     message: str
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None  # Optional: auto-creates session if not provided
+    user_id: Optional[str] = "default"  # for session grouping
 
 class ChatApprovalRequest(BaseModel):
     plan_id: str
@@ -1446,7 +1454,21 @@ def start_enhanced_maintenance_cycle():
             url = os.getenv("WEBSITE_URL")
             repo_path = clone_or_pull_repo()
             
-            bugs = asyncio.run(analyze_data(site_data, repo_files, url, repo_path))
+            # Safe async runner: creates a fresh event loop in a dedicated thread
+            # so it works whether called from Celery, FastAPI, or direct invocation.
+            def _run_async(coro):
+                import concurrent.futures
+                def _in_thread():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        return loop.run_until_complete(coro)
+                    finally:
+                        loop.close()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(_in_thread).result()
+
+            bugs = _run_async(analyze_data(site_data, repo_files, url, repo_path))
 
             global detected_issues
             detected_issues = bugs
@@ -1554,9 +1576,8 @@ def start_enhanced_maintenance_cycle():
 # CHATBOT API ENDPOINTS
 # ============================================================================
 
-class ChatMessageRequest(BaseModel):
-    session_id: str
-    message: str
+# ChatMessageRequest is defined above (line ~1216) — do not redefine here
+# All /chat/* endpoints use the same model with session_id: Optional[str]
 
 class CreateSessionRequest(BaseModel):
     user_id: Optional[str] = "default"
@@ -1853,4 +1874,7 @@ if __name__ == "__main__":
     print(f"[INFO] Website: {os.getenv('WEBSITE_URL', 'Not configured')}")
     print(f"[INFO] Monitoring Mode: {os.getenv('MONITORING_MODE', 'simple')}")
     print(f"[INFO] Safety Features: Validation ✅ | Rollback Protection ✅")
-    uvicorn.run("main_with_config:app", host="0.0.0.0", port=8000, reload=True)
+    
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main_with_config:app", host="0.0.0.0", port=port, reload=False if os.getenv("ENVIRONMENT") == "production" else True)
+

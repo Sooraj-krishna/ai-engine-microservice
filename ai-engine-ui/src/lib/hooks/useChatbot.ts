@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL, WS_BASE_URL } from '@/lib/config';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -56,7 +57,7 @@ interface PendingChange {
   user_request: string;
 }
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 export function useChatbot(sessionId?: string) {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId || null);

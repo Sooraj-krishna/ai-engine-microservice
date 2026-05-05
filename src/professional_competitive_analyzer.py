@@ -17,16 +17,21 @@ Architecture:
 6. Analyze gaps with advanced prioritization
 """
 
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Browser
 from bs4 import BeautifulSoup
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 from rule_based_feature_detector import rule_detector
 from feature_store import feature_store
 from nlp_feature_discovery import nlp_discoverer
 from change_detector import change_detector
 from feature_prioritizer import feature_prioritizer
+
+# Per-site page fetch timeout (seconds)
+SITE_FETCH_TIMEOUT = 30
+# Total analysis timeout (seconds) — safety net for the whole task
+ANALYSIS_TIMEOUT = 600
 
 
 class ProfessionalCompetitiveAnalyzer:
@@ -57,21 +62,27 @@ class ProfessionalCompetitiveAnalyzer:
         if your_features:
             feature_store.save_your_features(your_features)
         
-        # Analyze your site
-        print(f"[PROFESSIONAL_ANALYZER] Analyzing YOUR site features...")
-        own_features = await self._analyze_single_site(own_site_url)
-        
-        # Save your detected features
-        for feature in own_features:
-            feature_store.save_your_features([feature.feature_name], feature.category)
-        
-        # Analyze competitors in parallel
-        print(f"[PROFESSIONAL_ANALYZER] Analyzing {len(competitor_urls)} competitors in parallel...")
-        competitor_tasks = []
-        for url in competitor_urls:
-            competitor_tasks.append(self._analyze_single_site(url))
-        
-        competitor_features_list = await asyncio.gather(*competitor_tasks, return_exceptions=True)
+        # Launch a SINGLE shared browser for the entire analysis (much faster)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage'])
+            try:
+                # Analyze your site
+                print(f"[PROFESSIONAL_ANALYZER] Analyzing YOUR site features...")
+                own_features = await self._analyze_single_site_with_browser(own_site_url, browser)
+
+                # Save your detected features
+                for feature in own_features:
+                    feature_store.save_your_features([feature.feature_name], feature.category)
+
+                # Analyze competitors in parallel using the shared browser
+                print(f"[PROFESSIONAL_ANALYZER] Analyzing {len(competitor_urls)} competitors in parallel...")
+                competitor_tasks = [
+                    self._analyze_single_site_with_browser(url, browser)
+                    for url in competitor_urls
+                ]
+                competitor_features_list = await asyncio.gather(*competitor_tasks, return_exceptions=True)
+            finally:
+                await browser.close()
         
         # Store competitor features in database
         for i, features in enumerate(competitor_features_list):
@@ -225,82 +236,81 @@ class ProfessionalCompetitiveAnalyzer:
             ]
         }
     
-    async def _analyze_single_site(self, url: str) -> List:
+    async def _analyze_single_site_with_browser(self, url: str, browser: Browser) -> List:
         """
-        Analyze a single website for business features.
-        
-        Args:
-            url: Website URL to analyze
-            
-        Returns:
-            List of detected features
+        Analyze a single website using a shared browser instance.
+        Wraps the fetch in a per-site timeout so one hanging site never blocks the task.
         """
         try:
-            # Fetch page content
-            content = await self._fetch_page_content(url)
-            
-            # Detect features using rule-based patterns
-            rule_features = rule_detector.detect_features(content, page_type="homepage")
-            
-            # Detect features using NLP (discovers features missed by rules)
-            nlp_features = nlp_discoverer.discover_features(content, page_type="homepage")
-            
-            # Combine: Get NLP features that complement (don't overlap) rule-based features
-            complementary_nlp = nlp_discoverer.get_complementary_features(nlp_features, rule_features)
-            
-            # Merge features
-            all_features = list(rule_features) + list(complementary_nlp)
-            
-            print(f"[PROFESSIONAL_ANALYZER] {url}: {len(rule_features)} rule-based + {len(complementary_nlp)} NLP = {len(all_features)} total")
-            
-            return all_features
-            
+            content = await asyncio.wait_for(
+                self._fetch_page_content_with_browser(url, browser),
+                timeout=SITE_FETCH_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            print(f"[WARNING] Timeout after {SITE_FETCH_TIMEOUT}s fetching {url} — skipping.")
+            return []
         except Exception as e:
             print(f"[ERROR] Failed to analyze {url}: {e}")
             return []
-    
-    async def _fetch_page_content(self, url: str) -> str:
-        """
-        Fetch page content using Playwright.
-        
-        Args:
-            url: URL to fetch
-            
-        Returns:
-            Page HTML content
-        """
-        try:
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page()
-                
-                print(f"[PROFESSIONAL_ANALYZER] Fetching {url}...")
-                
-                # Load page with reasonable timeout
-                try:
-                    await page.goto(url, wait_until='domcontentloaded', timeout=60000)
-                    await page.wait_for_timeout(3000)  # Wait for dynamic content
-                except Exception as e:
-                    print(f"[WARNING] Page load issue for {url}: {e}")
-                
-                # Get page content
-                content = await page.content()
-                
-                # Also get visible text (better for feature detection)
-                text_content = await page.evaluate("""
-                    () => {
-                        return document.body.innerText;
-                    }
-                """)
-                
+
+        # Detect features using rule-based patterns
+        rule_features = rule_detector.detect_features(content, page_type="homepage")
+
+        # Detect features using NLP
+        nlp_features = nlp_discoverer.discover_features(content, page_type="homepage")
+        complementary_nlp = nlp_discoverer.get_complementary_features(nlp_features, rule_features)
+
+        all_features = list(rule_features) + list(complementary_nlp)
+        print(f"[PROFESSIONAL_ANALYZER] {url}: {len(rule_features)} rule-based + {len(complementary_nlp)} NLP = {len(all_features)} total")
+        return all_features
+
+    # Keep old method signature for backward compatibility
+    async def _analyze_single_site(self, url: str) -> List:
+        """Fallback: launches its own browser (used only if called without a shared browser)."""
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=['--no-sandbox'])
+            try:
+                return await self._analyze_single_site_with_browser(url, browser)
+            finally:
                 await browser.close()
-                
-                # Combine HTML and text for better detection
-                return content + "\n\n" + text_content
-                
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch {url}: {e}")
-            raise
+
+    async def _fetch_page_content_with_browser(self, url: str, browser: Browser) -> str:
+        """
+        Fetch page content using a shared Playwright browser.
+        Uses a new isolated context per URL to avoid cookie/session bleed.
+        """
+        print(f"[PROFESSIONAL_ANALYZER] Fetching {url}...")
+        context = await browser.new_context(
+            user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            java_script_enabled=True,
+        )
+        page = await context.new_page()
+        try:
+            try:
+                await page.goto(url, wait_until='domcontentloaded', timeout=25000)
+                await page.wait_for_timeout(2000)  # Let JS settle
+            except Exception as e:
+                print(f"[WARNING] Page load issue for {url}: {e}")
+
+            content = await page.content()
+            try:
+                text_content = await page.evaluate("() => document.body?.innerText || ''")
+            except Exception:
+                text_content = ""
+
+            return content + "\n\n" + text_content
+        finally:
+            await context.close()
+
+    # Legacy method kept for external callers
+    async def _fetch_page_content(self, url: str) -> str:
+        """Fallback fetch that creates its own browser (slow — prefer _fetch_page_content_with_browser)."""
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=['--no-sandbox'])
+            try:
+                return await self._fetch_page_content_with_browser(url, browser)
+            finally:
+                await browser.close()
     
     def _categorize_gaps(self, gaps: List[Dict]) -> Dict[str, int]:
         """Group gaps by category with counts."""

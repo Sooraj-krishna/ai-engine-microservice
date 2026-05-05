@@ -1,4 +1,6 @@
-"use client";
+'use client';
+
+import { API_BASE_URL, WS_BASE_URL } from '@/lib/config';
 
 import { useState, useEffect } from "react";
 
@@ -11,7 +13,7 @@ export default function SettingsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [message, setMessage] = useState("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
 
   // Load current setting
   useEffect(() => {
@@ -79,469 +81,204 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      {/* Header */}
-      <div className="border-b border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 to-transparent">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Settings
-            </h1>
-          </div>
-          <p className="text-gray-400">Configure AI Engine behavior and preferences</p>
-        </div>
-      </div>
+    <div className="bg-black min-h-screen pt-28 pb-24 px-4 relative overflow-hidden">
+      {/* Background ambient glows */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[150px] -ml-60 -mt-60 pointer-events-none" />
 
-      {/* Content */}
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
+      <div className="max-w-4xl mx-auto relative z-10">
+        {/* ── PAGE HEADER ─────────────────────────────── */}
+        <div className="mb-16">
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-3">
+            AI Engine · Configuration
+          </p>
+          <h1 className="text-5xl md:text-6xl font-bold uppercase tracking-tighter text-white leading-none mb-4">
+            System <span className="text-zinc-500 italic">Settings</span>
+          </h1>
+          <p className="text-base text-zinc-500 font-light max-w-xl">
+            Configure autonomous heuristics · Adjust AI intensity · Manage integration tokens
+          </p>
+        </div>
+
         {/* Success Message */}
         {message && (
-          <div className="mb-6 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <div className="mb-8 p-4 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest text-center animate-in fade-in zoom-in duration-300">
             {message}
           </div>
         )}
 
         {/* General Settings */}
-        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 shadow-xl mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <span>⚙️</span>
-            General Settings
-          </h2>
-          <p className="text-gray-400 text-sm">
-            Basic configuration options for the AI Engine.
+        <div className="premium-card p-8 mb-6">
+          <div className="flex items-center gap-4 mb-8 pb-4 border-b border-white/5">
+            <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center">
+              <span className="text-xs">⚙️</span>
+            </div>
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-white">General Configuration</h2>
+          </div>
+          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed mb-6">
+            Basic configuration options for the AI Engine intelligence core.
           </p>
-          <div className="mt-4 p-4 bg-gray-800/50 rounded-lg opacity-50">
-            <p className="text-sm text-gray-400">Coming soon...</p>
+          <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl border-dashed">
+            <p className="text-[10px] text-zinc-700 font-black uppercase tracking-widest text-center">Modules initializing...</p>
           </div>
         </div>
 
-        {/* Advanced Options - Collapsible */}
-        <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl shadow-xl overflow-hidden">
-          {/* Header - Clickable */}
+        {/* Advanced Options */}
+        <div className="premium-card overflow-hidden">
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-cyan-500/5 transition-colors"
+            className="w-full p-8 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
-                ⚡
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center">
+                <span className="text-xs">⚡</span>
               </div>
-              <div className="text-left">
-                <h2 className="text-xl font-semibold text-white">Advanced Options</h2>
-                <p className="text-sm text-gray-400">Performance and API configuration</p>
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-white">Advanced Heuristics</h2>
+                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Performance & API Tuning</p>
               </div>
             </div>
             <svg
-              className={`w-6 h-6 text-gray-400 transition-transform ${
-                showAdvanced ? "rotate-180" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              className={`w-4 h-4 text-zinc-500 transition-transform duration-500 ${showAdvanced ? "rotate-180" : ""}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          {/* Collapsible Content */}
-          <div
-            className={`transition-all duration-300 ease-in-out ${
-              showAdvanced ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
-            } overflow-hidden`}
-          >
-            <div className="px-6 pb-6 pt-2 border-t border-cyan-500/10 max-h-[1200px] overflow-y-auto"
-              style={{ scrollbarWidth: 'thin', scrollbarColor: '#06b6d4 #1f2937' }}
-            >
-              {/* AI Classification Setting */}
-              <div className="mt-4">
+          <div className={`transition-all duration-500 ease-in-out ${showAdvanced ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}>
+            <div className="p-8 border-t border-white/5 space-y-12">
+              
+              {/* AI Classification */}
+              <div className="space-y-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                        🧠
-                      </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">🧠</div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          AI-Powered Bug Classification
-                        </h3>
+                        <h3 className="text-sm font-black uppercase tracking-tight text-white">AI-Powered Bug Classification</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              useAiClassification ? "bg-green-500" : "bg-gray-500"
-                            }`}
-                          ></span>
-                          <span className="text-sm text-gray-400">
-                            {useAiClassification ? "Enabled" : "Disabled"}
-                          </span>
+                          <div className={`w-1.5 h-1.5 rounded-full ${useAiClassification ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-zinc-700"}`} />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{useAiClassification ? "Active" : "Inactive"}</span>
                         </div>
                       </div>
                     </div>
-
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-                      When enabled, uses Gemini AI to intelligently classify bug severity
-                      with high accuracy. When disabled, uses rule-based classification to
-                      save API tokens.
+                    <p className="text-zinc-500 text-xs leading-relaxed max-w-xl">
+                      Intelligently classify bug severity using Gemini AI. Provides high accuracy context-aware analysis of discovered anomalies.
                     </p>
-
-                    {/* Comparison Table */}
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      {/* AI Classification */}
-                      <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-purple-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>🤖</span>
-                          <span>AI Classification</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>~95% accuracy</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Context-aware analysis</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
-                            <span>Uses API tokens</span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* Rule-Based */}
-                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-cyan-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>📋</span>
-                          <span>Rule-Based</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>~85-90% accuracy</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>100+ keyword patterns</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>No API token cost</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Toggle Switch */}
-                  <div className="ml-6 flex-shrink-0">
-                    <button
-                      onClick={() => handleToggle(!useAiClassification)}
-                      disabled={saving}
-                      className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
-                        useAiClassification
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                          : "bg-gray-700"
-                      } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          useAiClassification ? "translate-x-10" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                    {saving && (
-                      <div className="text-xs text-gray-400 mt-2 text-center">
-                        Saving...
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => handleToggle(!useAiClassification)}
+                    disabled={saving}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all ${useAiClassification ? "bg-white" : "bg-zinc-800"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${useAiClassification ? "translate-x-6 bg-black" : "translate-x-1 bg-zinc-600"}`} />
+                  </button>
                 </div>
 
-                {/* API Token Warning */}
-                {useAiClassification && (
-                  <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <span className="text-xl">⚠️</span>
-                      <div className="flex-1">
-                        <p className="text-yellow-400 font-semibold mb-1 text-sm">
-                          API Token Usage
-                        </p>
-                        <p className="text-xs text-gray-300">
-                          AI classification uses Gemini API tokens for each bug detected.
-                          Monitor your usage in the{" "}
-                          <a
-                            href="https://aistudio.google.com/apikey"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300 underline"
-                          >
-                            Google AI Studio
-                          </a>
-                          .
-                        </p>
-                      </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-white mb-3 flex items-center gap-2">
+                      <span className="w-1 h-1 bg-white rounded-full" /> AI Engine
                     </div>
+                    <ul className="space-y-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                      <li className="flex items-center gap-2">✓ ~95% Accuracy</li>
+                      <li className="flex items-center gap-2">✓ Context Aware</li>
+                    </ul>
                   </div>
-                )}
+                  <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-3 flex items-center gap-2">
+                      <span className="w-1 h-1 bg-zinc-600 rounded-full" /> Rule-Based
+                    </div>
+                    <ul className="space-y-2 text-[10px] text-zinc-700 font-bold uppercase tracking-widest">
+                      <li className="flex items-center gap-2">✓ 100+ Patterns</li>
+                      <li className="flex items-center gap-2">✓ Zero Token Cost</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-cyan-500/10 my-6"></div>
-
-              {/* Use Improved Fixer */}
-              <div className="mt-6">
-                <div className="flex items-start justify-between mb-4">
+              {/* Improved Fixer */}
+              <div className="space-y-6 pt-12 border-t border-white/5">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
-                        🔧
-                      </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">🔧</div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          Use Improved Fixer
-                        </h3>
+                        <h3 className="text-sm font-black uppercase tracking-tight text-white">Enhanced Fixer Core</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              useImprovedFixer ? "bg-green-500" : "bg-gray-500"
-                            }`}
-                          ></span>
-                          <span className="text-sm text-gray-400">
-                            {useImprovedFixer ? "Enabled" : "Disabled"}
-                          </span>
+                          <div className={`w-1.5 h-1.5 rounded-full ${useImprovedFixer ? "bg-emerald-500" : "bg-zinc-700"}`} />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{useImprovedFixer ? "Active" : "Inactive"}</span>
                         </div>
                       </div>
                     </div>
-
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-                      Enable advanced fixing with code diffs, chunking, and incremental fixes. More accurate but experimental.
+                    <p className="text-zinc-500 text-xs leading-relaxed max-w-xl">
+                      Advanced resolution heuristics with code diffing, semantic chunking, and incremental patch application.
                     </p>
-
-                    {/* Feature Cards */}
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      {/* Standard Fixer */}
-                      <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-gray-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>📝</span>
-                          <span>Standard Fixer</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Basic fixes</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Fast execution</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">~</span>
-                            <span>Limited accuracy</span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* Improved Fixer */}
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-red-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>⚡</span>
-                          <span>Improved Fixer</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Code diffs & chunking</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Incremental fixes</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Higher accuracy</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Toggle Switch */}
-                  <div className="ml-6 flex-shrink-0">
-                    <button
-                      onClick={async () => {
-                        const enabled = !useImprovedFixer;
-                        setUseImprovedFixer(enabled);
-                        try {
-                          await fetch(`${API_URL}/configure`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ useImprovedFixer: enabled }),
-                          });
-                          setMessage("✅ Setting updated successfully!");
-                          setTimeout(() => setMessage(""), 3000);
-                        } catch (error) {
-                          console.error("Failed to update:", error);
-                          setMessage("❌ Failed to update setting");
-                        }
-                      }}
-                      disabled={saving}
-                      className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
-                        useImprovedFixer
-                          ? "bg-gradient-to-r from-red-500 to-orange-500"
-                          : "bg-gray-700"
-                      } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          useImprovedFixer ? "translate-x-10" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
+                  <button
+                    onClick={async () => {
+                      const enabled = !useImprovedFixer;
+                      setUseImprovedFixer(enabled);
+                      try {
+                        await fetch(`${API_URL}/configure`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ useImprovedFixer: enabled }),
+                        });
+                        setMessage("Settings Synchronized");
+                        setTimeout(() => setMessage(""), 3000);
+                      } catch (error) {
+                        setUseImprovedFixer(!enabled);
+                      }
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all ${useImprovedFixer ? "bg-white" : "bg-zinc-800"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${useImprovedFixer ? "translate-x-6 bg-black" : "translate-x-1 bg-zinc-600"}`} />
+                  </button>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-cyan-500/10 my-6"></div>
-
-              {/* Test Fixes Before Applying */}
-              <div className="mt-6">
-                <div className="flex items-start justify-between mb-4">
+              {/* Testing Mode */}
+              <div className="space-y-6 pt-12 border-t border-white/5">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                        🧪
-                      </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">🧪</div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          Test Fixes Before Applying
-                        </h3>
+                        <h3 className="text-sm font-black uppercase tracking-tight text-white">Isolation Validation</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              testFixesBeforeApply ? "bg-green-500" : "bg-gray-500"
-                            }`}
-                          ></span>
-                          <span className="text-sm text-gray-400">
-                            {testFixesBeforeApply ? "Enabled" : "Disabled"}
-                          </span>
+                          <div className={`w-1.5 h-1.5 rounded-full ${testFixesBeforeApply ? "bg-emerald-500" : "bg-zinc-700"}`} />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{testFixesBeforeApply ? "Mandatory" : "Optional"}</span>
                         </div>
                       </div>
                     </div>
-
-                    <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-                      Test fixes in isolated environment before creating PRs. Prevents bad fixes from going live.
-                      <span className="text-green-400 font-semibold"> Recommended: ON</span>
+                    <p className="text-zinc-500 text-xs leading-relaxed max-w-xl">
+                      Validate resolutions in isolated environments before deployment. Ensures zero regression policy for all automated patches.
                     </p>
-
-                    {/* Feature Cards */}
-                    <div className="mt-6 grid grid-cols-2 gap-4">
-                      {/* Without Testing */}
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-red-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>⚠️</span>
-                          <span>Without Testing</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
-                            <span>Bad fixes may go live</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-500">✗</span>
-                            <span>Risk of breaking code</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Faster deployment</span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* With Testing */}
-                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                        <div className="font-semibold text-green-400 mb-2 flex items-center gap-2 text-sm">
-                          <span>✅</span>
-                          <span>With Testing</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-gray-300">
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Validated fixes only</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Safe deployments</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>Production-ready</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Toggle Switch */}
-                  <div className="ml-6 flex-shrink-0">
-                    <button
-                      onClick={async () => {
-                        const enabled = !testFixesBeforeApply;
-                        setTestFixesBeforeApply(enabled);
-                        try {
-                          await fetch(`${API_URL}/configure`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ testFixesBeforeApply: enabled }),
-                          });
-                          setMessage("✅ Setting updated successfully!");
-                          setTimeout(() => setMessage(""), 3000);
-                        } catch (error) {
-                          console.error("Failed to update:", error);
-                          setMessage("❌ Failed to update setting");
-                        }
-                      }}
-                      disabled={saving}
-                      className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors ${
-                        testFixesBeforeApply
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                          : "bg-gray-700"
-                      } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <span
-                        className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                          testFixesBeforeApply ? "translate-x-10" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
+                  <button
+                    onClick={async () => {
+                      const enabled = !testFixesBeforeApply;
+                      setTestFixesBeforeApply(enabled);
+                      try {
+                        await fetch(`${API_URL}/configure`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ testFixesBeforeApply: enabled }),
+                        });
+                        setMessage("Settings Synchronized");
+                        setTimeout(() => setMessage(""), 3000);
+                      } catch (error) {
+                        setTestFixesBeforeApply(!enabled);
+                      }
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all ${testFixesBeforeApply ? "bg-white" : "bg-zinc-800"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${testFixesBeforeApply ? "translate-x-6 bg-black" : "translate-x-1 bg-zinc-600"}`} />
+                  </button>
                 </div>
               </div>
+
             </div>
           </div>
         </div>

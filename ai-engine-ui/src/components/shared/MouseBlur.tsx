@@ -38,10 +38,10 @@ export function MouseBlur() {
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: '400px',
-          height: '400px',
-          background: 'radial-gradient(circle, rgba(0, 206, 209, 0.15) 0%, transparent 70%)',
-          filter: 'blur(40px)',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%)',
+          filter: 'blur(60px)',
         }}
       />
       
@@ -51,8 +51,8 @@ export function MouseBlur() {
         style={{
           width: '200px',
           height: '200px',
-          background: 'radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, transparent 70%)',
-          filter: 'blur(20px)',
+          background: 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)',
+          filter: 'blur(30px)',
         }}
       />
       
@@ -60,10 +60,10 @@ export function MouseBlur() {
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          width: '8px',
-          height: '8px',
-          background: 'rgba(0, 206, 209, 0.8)',
-          boxShadow: '0 0 10px rgba(0, 206, 209, 0.6)',
+          width: '4px',
+          height: '4px',
+          background: 'rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 0 20px rgba(255, 255, 255, 0.3)',
         }}
       />
     </div>

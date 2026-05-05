@@ -7,10 +7,22 @@ import os
 from typing import List, Dict, Any
 
 # Gemini API configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-# Default to gemini-pro which is more widely available
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
-GEMINI_PRO_MODEL = os.getenv("GEMINI_PRO_MODEL", "gemini-pro")
+# NOTE: Read lazily via _get_api_key() so this works even when dotenv is loaded
+# AFTER this module is first imported (e.g. in standalone scripts or tests).
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_PRO_MODEL = os.getenv("GEMINI_PRO_MODEL", "gemini-2.5-pro")
+
+# Simple in-process cache so _get_available_models() isn't called on every API request
+_models_cache: list = []
+
+
+def _get_api_key() -> str:
+    """Lazily read the API key so it works even if dotenv is loaded after import."""
+    key = os.environ.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY", "")
+    return key
+
+
+
 
 
 def get_generation_config(task_type: str = "default", estimated_size: str = "medium"):
@@ -54,21 +66,22 @@ def get_generation_config(task_type: str = "default", estimated_size: str = "med
     return config
 
 
-def _get_available_models():
-    """List available Gemini models and return the first one that supports generateContent."""
+def _get_available_models() -> list:
+    """List available Gemini models. Cached to avoid a network call on every inference."""
+    global _models_cache
+    if _models_cache:
+        return _models_cache
     try:
         import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        
-        # List all available models
+        genai.configure(api_key=_get_api_key())
         models = genai.list_models()
-        available = []
-        for m in models:
-            # Check if model supports generateContent
-            if 'generateContent' in m.supported_generation_methods:
-                available.append(m.name.replace('models/', ''))
-        
-        return available
+        _models_cache = [
+            m.name.replace('models/', '')
+            for m in models
+            if 'generateContent' in m.supported_generation_methods
+        ]
+        print(f"[ModelRouter] Available models cached ({len(_models_cache)}): {', '.join(_models_cache[:5])}...")
+        return _models_cache
     except Exception as e:
         print(f"[ModelRouter] Could not list models: {e}")
         return []
@@ -83,8 +96,9 @@ def _query_gemini_api(
     Query Gemini API directly.
     Returns dict: { model_used, fallbacks_attempted, content, raw_response }
     """
-    if not GEMINI_API_KEY:
-        raise RuntimeError("Gemini API key not configured")
+    api_key = _get_api_key()
+    if not api_key:
+        raise RuntimeError("Gemini API key not configured. Set GEMINI_API_KEY in config.env")
     
     try:
         import google.generativeai as genai
@@ -92,16 +106,12 @@ def _query_gemini_api(
     except ImportError:
         raise RuntimeError("google-generativeai package not installed. Install with: pip install google-generativeai")
     
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=api_key)
     
     # Select model based on context size
     selected_model = model or GEMINI_MODEL
     
-    # Get available models first
     available_models = _get_available_models()
-    if available_models:
-        print(f"[ModelRouter] Available models: {', '.join(available_models[:5])}...")
-    
     # Convert messages format for Gemini
     # Gemini expects a single prompt or a list of Content objects
     prompt_parts = []
@@ -207,8 +217,8 @@ def ask(
     Uses Gemini Pro for large contexts (100k+ tokens), Flash otherwise.
     Returns dict: { model_used, fallbacks_attempted, content, raw_response }
     """
-    if not GEMINI_API_KEY:
-        raise RuntimeError("Gemini API key not configured")
+    if not _get_api_key():
+        raise RuntimeError("Gemini API key not configured. Set GEMINI_API_KEY in config.env")
     
     # Use Pro model for very large contexts, Flash for normal
     gemini_model = GEMINI_PRO_MODEL if min_context >= 100000 else GEMINI_MODEL

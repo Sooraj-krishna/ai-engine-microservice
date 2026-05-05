@@ -7,9 +7,16 @@ Handles conversation flow, intent detection, plan generation, and response forma
 
 from typing import Dict, List, Optional
 from datetime import datetime
+from pathlib import Path
+from dotenv import load_dotenv
 from chat_storage import chat_storage
 from chatbot_intent_detector import intent_detector
 from chatbot_plan_generator import plan_generator
+
+# Ensure env vars are loaded even when chatbot_manager is the first import
+_env = Path(__file__).parent.parent / '.env'
+_cfg = Path(__file__).parent.parent / 'config.env'
+load_dotenv(dotenv_path=_env if _env.exists() else _cfg)
 
 
 class ChatbotManager:
@@ -164,10 +171,17 @@ class ChatbotManager:
         )
         
         if "error" in plan:
+            error_msg = plan.get("error", "unknown error")
+            friendly = (
+                "I couldn't generate a plan right now. "
+                "This is usually caused by an API quota limit or a temporary issue.\n\n"
+                f"**Error**: {error_msg}\n\n"
+                "Please try again in a moment, or rephrase your request."
+            )
             return {
-                "response": plan.get("summary", "I couldn't create a plan for that request. Could you provide more details?"),
+                "response": friendly,
                 "intent": intent,
-                "error": plan["error"]
+                "error": error_msg
             }
         
         # Save as pending change
@@ -257,28 +271,42 @@ class ChatbotManager:
     
     def _handle_general_question(self, session_id: str, user_message: str,
                                 intent_data: Dict) -> Dict:
-        """Handle general questions about the system."""
-        
-        # Simple FAQ-style responses
+        """Handle general questions about the system, using AI when available."""
+        from model_router import _query_gemini_api, _get_api_key
         message_lower = user_message.lower()
-        
-        if "what can" in message_lower or "help" in message_lower or "do" in message_lower:
+
+        # Try AI-powered answer first
+        if _get_api_key():
+            try:
+                prompt = (
+                    "You are an AI assistant for an AI-powered website maintenance platform. "
+                    "Answer the user's question concisely and helpfully. "
+                    "You can help with: fixing website bugs, adding features, UI changes, "
+                    "competitive analysis, and tracking implementation progress.\n\n"
+                    f"User: {user_message}"
+                )
+                result = _query_gemini_api([{"role": "user", "content": prompt}], timeout=20)
+                ai_response = result.get("content", "").strip()
+                if ai_response:
+                    return {"response": ai_response, "intent": "general_question"}
+            except Exception as e:
+                print(f"[CHATBOT] AI general answer failed: {e}, using fallback")
+
+        # Fallback static responses
+        if any(kw in message_lower for kw in ["what can", "help", "capabilities", "what do"]):
             response = """I can help you with:
-            
-🔧 **Fix Bugs**: Detect and fix issues in your website
-✨ **Add Features**: Implement new functionality
-🎨 **Modify UI**: Change colors, layouts, fonts, and styling
-📊 **Analyze Competitors**: See what features competitors have
-📈 **Track Progress**: Check status of implementations
+
+🔧 **Fix Bugs** — Detect and fix issues in your website
+✨ **Add Features** — Implement new functionality  
+🎨 **Modify UI** — Change colors, layouts, fonts, and styling
+📊 **Analyze Competitors** — See what features competitors have
+📈 **Track Progress** — Check status of implementations
 
 Just describe what you need in natural language, and I'll create a plan for you to review!"""
         else:
             response = "I'm your AI assistant for website maintenance. I can help you fix bugs, add features, modify UI, and analyze competitors. What would you like to do?"
-        
-        return {
-            "response": response,
-            "intent": "general_question"
-        }
+
+        return {"response": response, "intent": "general_question"}
     
     def _format_clarification_response(self, intent_data: Dict) -> Dict:
         """Format response when clarification is needed."""

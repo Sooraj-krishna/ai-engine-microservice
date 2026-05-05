@@ -7,12 +7,27 @@ node_modules/
 .env.local
 .env.development
 .env.production
+.env.test
 config.env
 config.env.*
+
+# Secrets and Keys
+secrets/
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!composer.json
+!vercel.json
+!rollback_history.json
+!validation_log.json
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Runtime data
 pids
@@ -23,6 +38,8 @@ pids
 # Build outputs
 dist/
 build/
+out/
+.next/
 
 # Python
 __pycache__/
@@ -30,6 +47,11 @@ __pycache__/
 *$py.class
 venv/
 env/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
 
 # Database
 *.db
@@ -44,12 +66,14 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.cursor/
 
-# Uploads and temp files
+# Project specific
+data/
 uploads/
 temp/
 backups/
-data/
 
 # OpenMemory - IDE/Assistant specific rules
 .cursor/rules/openmemory.mdc
+

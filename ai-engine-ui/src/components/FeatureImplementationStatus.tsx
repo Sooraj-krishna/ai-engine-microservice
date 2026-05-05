@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE_URL, WS_BASE_URL } from '@/lib/config';
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +53,7 @@ export default function FeatureImplementationStatus() {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/implementation-summary');
+      const response = await fetch(`${API_BASE_URL}/implementation-summary`);
       if (response.ok) {
         const data = await response.json();
         setSummary(data);
@@ -66,7 +68,7 @@ export default function FeatureImplementationStatus() {
   const updateFeatureStatus = async (featureId: string, newStatus: string) => {
     setUpdatingStatus(featureId);
     try {
-      const response = await fetch(`http://localhost:8000/feature-status/${featureId}`, {
+      const response = await fetch(`${API_BASE_URL}/feature-status/${featureId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, notes: `Updated via UI` })
@@ -127,72 +129,63 @@ export default function FeatureImplementationStatus() {
     : summary.features.filter(f => f.implementation_status !== 'cancelled');
 
   return (
-    <div className="glass-card rounded-xl p-6 smooth-transition">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-lg">
-            <CheckCircle2 className="h-6 w-6 text-white" />
+    <div className="premium-card p-8 transition-all duration-500">
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
+            <CheckCircle2 className="h-6 w-6 text-black" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gradient">Feature Implementation Status</h2>
-            <p className="text-sm text-gray-600">Track your selected features</p>
+            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-white mb-1">Objective Status</h2>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Heuristic Implementation Tracking</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {summary.by_status.cancelled > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setShowCancelled(!showCancelled)}
-              className="hover:bg-gray-100 text-xs"
+              className="text-[10px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors"
             >
               {showCancelled ? 'Hide' : 'Show'} Cancelled ({summary.by_status.cancelled})
-            </Button>
+            </button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="hover:bg-purple-100"
+            className="p-2 hover:bg-white/5 rounded-full transition-all border border-white/10"
           >
             {isExpanded ? (
-              <ChevronUp className="h-5 w-5" />
+              <ChevronUp className="h-4 w-4 text-zinc-400" />
             ) : (
-              <ChevronDown className="h-5 w-5" />
+              <ChevronDown className="h-4 w-4 text-zinc-400" />
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-          <div className="text-3xl font-bold text-purple-700">{summary.total_selected}</div>
-          <div className="text-xs text-purple-600">Total Selected</div>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-          <div className="text-3xl font-bold text-blue-700">{summary.by_status.in_progress}</div>
-          <div className="text-xs text-blue-600">In Progress</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-          <div className="text-3xl font-bold text-green-700">{summary.by_status.completed}</div>
-          <div className="text-xs text-green-600">Completed</div>
-        </div>
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
-          <div className="text-3xl font-bold text-gray-700">{summary.by_status.pending}</div>
-          <div className="text-xs text-gray-600">Pending</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {[
+          { label: 'Total Selected', value: summary.total_selected, color: 'text-white' },
+          { label: 'In Progress', value: summary.by_status.in_progress, color: 'text-sky-400' },
+          { label: 'Completed', value: summary.by_status.completed, color: 'text-emerald-400' },
+          { label: 'Pending', value: summary.by_status.pending, color: 'text-zinc-500' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 hover:bg-white/[0.04] transition-colors">
+            <div className={`text-3xl font-bold tracking-tighter mb-1 ${stat.color}`}>{stat.value}</div>
+            <div className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">{stat.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-          <span className="text-sm font-bold text-purple-700">{progress}%</span>
+      <div className="mb-10">
+        <div className="flex justify-between items-end mb-3">
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Overall Implementation Progress</span>
+          <span className="text-xl font-bold text-white tabular-nums">{progress}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div
-            className="h-3 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 rounded-full transition-all duration-500"
+            className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.5)]"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -200,93 +193,81 @@ export default function FeatureImplementationStatus() {
 
       {/* Expanded Feature List */}
       {isExpanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6 animate-in fade-in duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
           {loading && (
-            <div className="flex items-center justify-center py-8 col-span-2">
-              <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+            <div className="flex items-center justify-center py-12 col-span-2">
+              <Loader2 className="h-6 w-6 animate-spin text-zinc-700" />
             </div>
           )}
           
           {!loading && displayFeatures.map((feature) => (
             <div
               key={feature.id}
-              className="bg-white/80 border border-gray-200 rounded-lg p-3 hover:shadow-lg smooth-transition"
+              className="group bg-white/[0.02] border border-white/5 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getStatusIcon(feature.implementation_status)}
-                    <h3 className="font-semibold text-sm text-gray-900">{feature.feature_name}</h3>
+              <div className="flex items-start justify-between mb-5">
+                <div className="flex-1 pr-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="opacity-50 group-hover:opacity-100 transition-opacity">
+                      {getStatusIcon(feature.implementation_status)}
+                    </div>
+                    <h3 className="font-bold text-sm text-white uppercase tracking-tight">{feature.feature_name}</h3>
                   </div>
-                  <p className="text-xs text-gray-600">{feature.category}</p>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{feature.category}</p>
                 </div>
-                <Badge className={`${getStatusColor(feature.implementation_status)} border capitalize text-xs`}>
+                <span className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest rounded-md border ${
+                  feature.implementation_status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                  feature.implementation_status === 'in_progress' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                  'bg-white/5 text-zinc-500 border-white/10'
+                }`}>
                   {feature.implementation_status.replace('_', ' ')}
-                </Badge>
+                </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-2 text-xs">
+              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-black/20 rounded-xl border border-white/5">
                 <div>
-                  <span className="text-gray-500">Priority:</span>
-                  <span className="ml-1 font-medium text-gray-900">{feature.priority_score}/10</span>
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-600 font-black mb-1">Priority</p>
+                  <p className="text-xs text-white font-bold">{feature.priority_score}/10</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Effort:</span>
-                  <span className="ml-1 font-medium text-gray-900">{feature.estimated_effort}</span>
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-600 font-black mb-1">Effort</p>
+                  <p className="text-xs text-white font-bold">{feature.estimated_effort}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Impact:</span>
-                  <span className="ml-1 font-medium text-gray-900 capitalize">{feature.business_impact}</span>
+                  <p className="text-[8px] uppercase tracking-widest text-zinc-600 font-black mb-1">Impact</p>
+                  <p className="text-xs text-white font-bold capitalize">{feature.business_impact}</p>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 {feature.implementation_status === 'pending' && (
-                  <Button
-                    size="sm"
+                  <button
                     onClick={() => updateFeatureStatus(feature.id, 'in_progress')}
                     disabled={updatingStatus === feature.id}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 h-7"
+                    className="flex-1 py-2.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all disabled:opacity-50"
                   >
-                    {updatingStatus === feature.id ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      'Start'
-                    )}
-                  </Button>
+                    {updatingStatus === feature.id ? <Loader2 className="h-3 w-3 animate-spin mx-auto" /> : 'Initialize'}
+                  </button>
                 )}
                 {feature.implementation_status === 'in_progress' && (
                   <>
-                    <Button
-                      size="sm"
+                    <button
                       onClick={() => updateFeatureStatus(feature.id, 'completed')}
                       disabled={updatingStatus === feature.id}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1 h-7"
+                      className="flex-1 py-2.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all disabled:opacity-50"
                     >
-                      {updatingStatus === feature.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        'Complete'
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
+                      {updatingStatus === feature.id ? <Loader2 className="h-3 w-3 animate-spin mx-auto" /> : 'Finalize'}
+                    </button>
+                    <button
                       onClick={() => updateFeatureStatus(feature.id, 'cancelled')}
                       disabled={updatingStatus === feature.id}
-                      className="flex-1 text-xs py-1 h-7"
+                      className="flex-1 py-2.5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
                     >
-                      Cancel
-                    </Button>
+                      Abort
+                    </button>
                   </>
                 )}
               </div>
-
-              {feature.status_updated_at && (
-                <div className="mt-2 text-xs text-gray-500">
-                  Updated: {new Date(feature.status_updated_at).toLocaleString()}
-                </div>
-              )}
             </div>
           ))}
         </div>

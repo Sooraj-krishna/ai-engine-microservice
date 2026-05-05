@@ -43,73 +43,155 @@ def _load_module_from_src(module_name: str):
     spec.loader.exec_module(module)
     return module
 
-@celery_app.task(name="tasks.maintenance_cycle", bind=True)
+@celery_app.task(
+    name="tasks.maintenance_cycle",
+    bind=True,
+    soft_time_limit=3300,   # 55 min SIGTERM — gives graceful cleanup
+    time_limit=3600,        # 60 min hard SIGKILL safety net
+)
 def task_maintenance_cycle(self):
-    """Celery task for running the enhanced maintenance cycle."""
-    main_with_config = _load_module_from_src("main_with_config")
-    print(f"[CELERY] Starting maintenance cycle task {self.request.id}")
-    
-    # Run the existing logic
-    # Note: start_enhanced_maintenance_cycle is synchronous but contains async calls via asyncio.run
-    main_with_config.start_enhanced_maintenance_cycle()
-    
-    return {"status": "completed", "task_id": self.request.id}
+    """Run the AI maintenance cycle (bug detection → classification → queue).
 
-@celery_app.task(name="tasks.manual_rollback", bind=True)
+    Fixes vs original:
+    - Time-limits prevent infinite hangs (mirrors competitive analysis fix).
+    - Imports only the target function, not the full module (avoids re-running
+      FastAPI startup, DB connections, middleware, etc. in the Celery process).
+    - Graceful error result stored so the UI can display it.
+    - asyncio.run() collision guard (Celery may already have a loop).
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+    import traceback
+
+    print(f"[CELERY] Starting maintenance cycle task {self.request.id}")
+
+    try:
+        # Import only the function — avoids re-executing all of main_with_config's
+        # module-level code (FastAPI app creation, middleware, DB init, etc.)
+        if "main_with_config" in sys.modules:
+            main_mod = sys.modules["main_with_config"]
+        else:
+            main_mod = _load_module_from_src("main_with_config")
+
+        cycle_fn = main_mod.start_enhanced_maintenance_cycle
+
+        # start_enhanced_maintenance_cycle is synchronous but internally calls
+        # asyncio.run(analyze_data(...)). Guard against an already-running loop.
+        try:
+            cycle_fn()
+        except RuntimeError as re:
+            if "cannot be called from a running event loop" in str(re).lower():
+                # Running inside an existing event loop — execute in a fresh thread
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(cycle_fn)
+                    future.result(timeout=3290)  # just under soft_time_limit
+            else:
+                raise
+
+        print(f"[CELERY] Maintenance cycle task {self.request.id} completed.")
+        return {"status": "completed", "task_id": self.request.id}
+
+    except SoftTimeLimitExceeded:
+        msg = "Maintenance cycle exceeded soft time limit (55 min) and was terminated."
+        print(f"[CELERY] {msg}")
+        return {"status": "timeout", "task_id": self.request.id, "error": msg}
+
+    except Exception as exc:
+        tb = traceback.format_exc()
+        print(f"[CELERY] Maintenance cycle task {self.request.id} FAILED:\n{tb}")
+        # Re-raise so Celery marks the task FAILED (visible in the UI)
+        raise
+
+@celery_app.task(
+    name="tasks.manual_rollback",
+    bind=True,
+    soft_time_limit=300,
+    time_limit=360,
+)
 def task_manual_rollback(self):
     """Celery task for performing manual rollback."""
-    main_with_config = _load_module_from_src("main_with_config")
-    print(f"[CELERY] Starting manual rollback task {self.request.id}")
-    
-    main_with_config.perform_manual_rollback()
-    
-    return {"status": "completed", "task_id": self.request.id}
+    from celery.exceptions import SoftTimeLimitExceeded
+    import traceback
 
-@celery_app.task(name="tasks.analyze_competitors", bind=True)
+    print(f"[CELERY] Starting manual rollback task {self.request.id}")
+    try:
+        if "main_with_config" in sys.modules:
+            main_mod = sys.modules["main_with_config"]
+        else:
+            main_mod = _load_module_from_src("main_with_config")
+
+        main_mod.perform_manual_rollback()
+        print(f"[CELERY] Manual rollback task {self.request.id} completed.")
+        return {"status": "completed", "task_id": self.request.id}
+    except SoftTimeLimitExceeded:
+        return {"status": "timeout", "task_id": self.request.id, "error": "Rollback timed out."}
+    except Exception as exc:
+        print(f"[CELERY] Manual rollback FAILED: {traceback.format_exc()}")
+        raise
+
+@celery_app.task(
+    name="tasks.analyze_competitors",
+    bind=True,
+    soft_time_limit=660,   # Send SIGTERM after 11 min → triggers SoftTimeLimitExceeded
+    time_limit=720,        # Send SIGKILL after 12 min → hard kill
+)
 def task_analyze_competitors(self, own_site_url, competitor_urls, depth, premium, ultra, professional):
-    """Celery task for running competitive analysis."""
-    # We need a new event loop for the async analyzer call
+    """Celery task for running competitive analysis.
+
+    Hard limits prevent 50-minute zombie runs caused by Playwright browser hangs.
+    Per-site fetch timeout is handled inside professional_competitive_analyzer.py.
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+    import json
+
+    ASYNC_TIMEOUT = 600  # 10 minutes — matches ANALYSIS_TIMEOUT in the analyzer
+
     async def run_analysis():
         if professional:
             from professional_competitive_analyzer import professional_analyzer
-            analysis = await professional_analyzer.analyze_competitors_professional(own_site_url, competitor_urls)
-            # Need to transform this for UI if needed, but here we just return the raw analysis
-            # and let the endpoint/frontend handle storage or retrieval.
-            # Actually, main_with_config stores it in a global. Celery tasks should store it in a persistent way (Redis or file).
-            return analysis
+            return await professional_analyzer.analyze_competitors_professional(own_site_url, competitor_urls)
         elif ultra:
             from ultra_comprehensive_analyzer import ultra_analyzer
-            analysis = await ultra_analyzer.analyze_ultra_comprehensive(own_site_url, competitor_urls)
-            return analysis
+            return await ultra_analyzer.analyze_ultra_comprehensive(own_site_url, competitor_urls)
         else:
             from competitive_analyzer import CompetitiveAnalyzer
             analyzer = CompetitiveAnalyzer(depth=depth)
-            analysis = await analyzer.analyze_competitors(own_site_url, competitor_urls, premium=premium)
-            return analysis
+            return await analyzer.analyze_competitors(own_site_url, competitor_urls, premium=premium)
 
-    print(f"[CELERY] Starting competitive analysis task {self.request.id}")
-    # Run the async function synchronously
+    print(f"[CELERY] Starting competitive analysis task {self.request.id} (professional={professional})")
+
     try:
-        result = asyncio.run(run_analysis())
-    except RuntimeError:
-        # Fallback if an event loop is already running (unlikely in Celery worker but possible)
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(run_analysis())
-        loop.close()
-    
-    # Store results in a file or Redis for the frontend to pick up
-    # For now, let's use a JSON file in a 'data/analysis' directory
-    import json
+        try:
+            result = asyncio.run(asyncio.wait_for(run_analysis(), timeout=ASYNC_TIMEOUT))
+        except RuntimeError:
+            # Fallback: running inside an existing event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(asyncio.wait_for(run_analysis(), timeout=ASYNC_TIMEOUT))
+            finally:
+                loop.close()
+    except asyncio.TimeoutError:
+        print(f"[CELERY] Task {self.request.id} timed out after {ASYNC_TIMEOUT}s.")
+        result = {"status": "timeout", "error": "Analysis timed out. Try fewer competitor URLs."}
+    except SoftTimeLimitExceeded:
+        print(f"[CELERY] Task {self.request.id} hit Celery soft time limit.")
+        result = {"status": "timeout", "error": "Task exceeded time limit."}
+    except Exception as e:
+        print(f"[CELERY] Task {self.request.id} failed: {e}")
+        result = {"status": "error", "error": str(e)}
+
+    # Persist results for frontend polling
     results_dir = Path("data/analysis")
     results_dir.mkdir(parents=True, exist_ok=True)
-    
+
     result_file = results_dir / f"results_{self.request.id}.json"
     with open(result_file, 'w') as f:
         json.dump(result, f, indent=2)
-        
+
+    print(f"[CELERY] Task {self.request.id} done → {result_file}")
     return {
-        "status": "completed", 
-        "task_id": self.request.id, 
+        "status": result.get("status", "completed"),
+        "task_id": self.request.id,
         "result_file": str(result_file)
     }

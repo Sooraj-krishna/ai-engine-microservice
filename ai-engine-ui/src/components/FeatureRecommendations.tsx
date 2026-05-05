@@ -1,15 +1,8 @@
-/**
- * Feature Recommendations Component
- * Displays competitive analysis results and allows feature selection
- */
-
 'use client';
 
+import { API_BASE_URL } from '@/lib/config';
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles, AlertTriangle, Play, RefreshCw, BarChart, CheckCircle2 } from 'lucide-react';
 
 interface Feature {
   id: string;
@@ -39,7 +32,6 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzingPremium, setAnalyzingPremium] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPremium, setIsPremium] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
@@ -50,9 +42,8 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:8000/feature-recommendations');
+      const response = await fetch(`${API_BASE_URL}/feature-recommendations`);
       
-      // Check if response is actually JSON before parsing
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         setError('Server returned non-JSON response. API might be unavailable.');
@@ -80,13 +71,12 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
     return new Promise((resolve, reject) => {
       const interval = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:8000/tasks/${taskId}`);
+          const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`);
           const data = await response.json();
           
           if (data.ready) {
             clearInterval(interval);
-            // Get final results
-            const resultResponse = await fetch(`http://localhost:8000/tasks/${taskId}/result`);
+            const resultResponse = await fetch(`${API_BASE_URL}/tasks/${taskId}/result`);
             const resultData = await resultResponse.json();
             resolve(resultData);
           }
@@ -94,21 +84,18 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
           clearInterval(interval);
           reject(err);
         }
-      }, 2000); // Check every 2 seconds
+      }, 2000);
     });
   };
 
   const triggerAnalysis = async (isProfessional: boolean = false) => {
-    if (isProfessional) {
-      setAnalyzingPremium(true);
-    } else {
-      setAnalyzing(true);
-    }
+    if (isProfessional) setAnalyzingPremium(true);
+    else setAnalyzing(true);
+    
     setError(null);
     try {
-      // Use 'professional' parameter for business features, 'premium' for comprehensive UI analysis
       const urlParam = isProfessional ? 'professional=true' : 'premium=false';
-      const response = await fetch(`http://localhost:8000/analyze-competitors?${urlParam}`, {
+      const response = await fetch(`${API_BASE_URL}/analyze-competitors?${urlParam}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -117,32 +104,19 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
         const initialData = await response.json();
         const taskId = initialData.task_id;
         
-        console.log(`[ANALYSIS] Task queued: ${taskId}. Polling for results...`);
-        
-        // Wait for task completion
         await pollTaskStatus(taskId);
-        
-        // Analysis complete, fetch recommendations
         await fetchRecommendations();
-        setIsPremium(isProfessional);
         
-        // Use setTimeout to ensure state updates complete before showing alert
         setTimeout(() => {
-          if (isProfessional) {
-            alert('✨ Professional analysis completed! Business feature insights loaded.');
-          } else {
-            alert('✅ Competitive analysis completed! Feature recommendations loaded.');
-          }
+          alert(isProfessional ? '✨ Professional analysis completed!' : '✅ Analysis completed!');
         }, 100);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to trigger analysis');
-        alert('❌ Analysis failed: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Failed to trigger competitive analysis:', error);
+      console.error('Analysis failed:', error);
       setError('Network error triggering analysis');
-      alert('❌ Network error. Please try again.');
     } finally {
       setAnalyzing(false);
       setAnalyzingPremium(false);
@@ -151,7 +125,7 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
 
   const handleSelectFeature = async (featureId: string) => {
     try {
-      const response = await fetch('http://localhost:8000/select-feature', {
+      const response = await fetch(`${API_BASE_URL}/select-feature`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feature_id: featureId })
@@ -161,275 +135,172 @@ export default function FeatureRecommendations({ onFeatureSelect, onOpenChatbot 
         const data = await response.json();
         setSelectedFeature(featureId);
         
-        // Legacy callback
-        if (onFeatureSelect) {
-          onFeatureSelect(featureId);
-        }
+        if (onFeatureSelect) onFeatureSelect(featureId);
         
-        // New chatbot integration
         if (data.success && data.session_id && onOpenChatbot) {
-          console.log(`[FEATURE_SELECT] Opening chatbot with session ${data.session_id}`);
           onOpenChatbot(featureId, data.session_id);
         } else {
-          // Fallback alert if no chatbot handler
-          alert(`✅ Feature '${data.feature_name}' sent to chatbot for implementation!`);
+          alert(`✅ Feature '${data.feature_name}' queued for implementation.`);
         }
       }
     } catch (error) {
       console.error('Failed to select feature:', error);
-      alert('❌ Failed to select feature. Please try again.');
     }
-  };
-
-  const getPriorityColor = (score: number) => {
-    if (score >= 7) return 'bg-red-500';
-    if (score >= 4) return 'bg-yellow-500';
-    return 'bg-blue-500';
-  };
-
-  const getPriorityLabel = (score: number) => {
-    if (score >= 7) return 'High Priority';
-    if (score >= 4) return 'Medium Priority';
-    return 'Low Priority';
   };
 
   if (loading) {
     return (
-      <div className="glass-card rounded-xl p-6 text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        <p className="mt-4 text-gray-600">Loading feature recommendations...</p>
+      <div className="premium-card p-12 flex flex-col items-center justify-center">
+        <RefreshCw className="h-8 w-8 text-zinc-500 animate-spin mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Loading Intelligence...</p>
       </div>
     );
   }
 
-  // Show success message if analysis ran but no features found
+  // Pre-analysis or zero features state
   if (!features || features.length === 0) {
-    // Check if we have a summary (meaning analysis was run)
     if (summary && summary.total_competitors > 0) {
       return (
-        <Card className="border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-green-800 flex items-center gap-2">
-              <span className="text-2xl">🎉</span> Great News!
-            </CardTitle>
-            <CardDescription>Your site is already competitive</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-green-900 mb-3">
-              I analyzed <strong>{summary.total_competitors} competitor website{summary.total_competitors > 1 ? 's' : ''}</strong> and 
-              found that your site already has all the key features they offer!
-            </p>
-            <p className="text-xs text-gray-600">
-              No missing features were identified. Your site is doing well compared to competitors.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="premium-card p-8 border-emerald-500/20 bg-emerald-500/5">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+            <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">Competitive Advantage Maintained</h3>
+          </div>
+          <p className="text-sm text-zinc-300">
+            Analyzed {summary.total_competitors} competitor sites. Your platform currently matches or exceeds market feature baselines.
+          </p>
+        </div>
       );
     }
     
-    // No analysis run yet
     return (
-      <Card className="glass-card rounded-xl shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-gradient text-2xl">Feature Recommendations</CardTitle>
-          <CardDescription>
-            Analyze competitor websites to discover missing features
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Discover what features your competitors have that you might be missing.
-            </p>
-            <div className="space-y-3">
-              <Button
-                onClick={() => triggerAnalysis(false)}
-                disabled={analyzing || analyzingPremium}
-                className="w-full gradient-button text-white font-semibold py-6 text-lg"
-              >
-                {analyzing ? '🔄 Analyzing Competitors...' : '🚀 Run Standard Analysis'}
-              </Button>
-              
-              <Button
-                onClick={() => triggerAnalysis(true)}
-                disabled={analyzing || analyzingPremium}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                {analyzingPremium ? '✨ Running Professional Analysis...' : '✨ Run Professional Analysis'}
-              </Button>
+      <div className="premium-card p-8">
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-white tracking-wide mb-2">Market Intelligence</h3>
+          <p className="text-sm text-zinc-400">Scan competitors to detect architectural gaps and missing features.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => triggerAnalysis(false)}
+            disabled={analyzing || analyzingPremium}
+            className="group relative overflow-hidden bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-6 text-left transition-all disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <BarChart className="h-5 w-5 text-zinc-400 group-hover:text-white transition-colors" />
+              <span className="text-sm font-black uppercase tracking-widest text-zinc-300 group-hover:text-white transition-colors">
+                {analyzing ? 'Scanning...' : 'Standard Scan'}
+              </span>
             </div>
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-lg p-4 mt-3">
-              <p className="text-xs font-semibold text-purple-900 mb-2">ℹ️ Analysis Types:</p>
-              <ul className="text-xs text-gray-700 space-y-1.5">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  <span><strong className="text-blue-800">Standard:</strong> UI elements + SEO + Accessibility + Tech Stack detection</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-600 font-bold">•</span>
-                  <span><strong className="text-purple-800">Professional:</strong> Business features (Payment methods, Delivery options, Reviews, COD, Try & Buy, Loyalty programs)</span>
-                </li>
-              </ul>
+            <p className="text-[11px] text-zinc-500 font-medium">Basic UI elements, SEO markers, Accessibility metrics, and Technology Stack discovery.</p>
+          </button>
+          
+          <button
+            onClick={() => triggerAnalysis(true)}
+            disabled={analyzing || analyzingPremium}
+            className="group relative overflow-hidden bg-white/[0.05] hover:bg-white/[0.1] border border-white/20 rounded-xl p-6 text-left transition-all disabled:opacity-50"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-2xl rounded-full -mr-16 -mt-16 pointer-events-none" />
+            <div className="flex items-center gap-3 mb-3 relative z-10">
+              <Sparkles className="h-5 w-5 text-zinc-300 group-hover:text-white transition-colors" />
+              <span className="text-sm font-black uppercase tracking-widest text-white">
+                {analyzingPremium ? 'Analyzing...' : 'Deep Scan'}
+              </span>
             </div>
-            <p className="text-xs text-gray-500 text-center">
-              ⏱️ Analysis takes 30-60 seconds. Make sure COMPETITOR_URLS is configured in .env
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            <p className="text-[11px] text-zinc-400 font-medium relative z-10">Comprehensive analysis of business logic, checkout flows, user retention, and advanced architectures.</p>
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Card className="glass-card rounded-xl shadow-xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-gradient text-2xl">Feature Recommendations</CardTitle>
-              <CardDescription className="text-base">
-                Based on analysis of {summary?.total_competitors || 0} competitor sites
-              </CardDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="hover:bg-purple-100"
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-5 w-5" />
-              ) : (
-                <ChevronDown className="h-5 w-5" />
-              )}
-            </Button>
+      {/* Header Summary */}
+      <div className="premium-card p-6 flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white mb-1">Feature Delta Analysis</h3>
+          <p className="text-[11px] text-zinc-500 font-medium">Scanned {summary?.total_competitors || 0} competitor properties</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex gap-2">
+            <span className="px-2 py-1 bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-wider rounded">High: {summary?.high_priority || 0}</span>
+            <span className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-wider rounded">Med: {summary?.medium_priority || 0}</span>
           </div>
-        </CardHeader>
-        <CardContent>
-          {summary && (
-            <div className="flex gap-3 mb-6">
-              <Badge variant="destructive" className="px-4 py-2 text-sm">High: {summary.high_priority}</Badge>
-              <Badge variant="default" className="px-4 py-2 text-sm bg-blue-600">Medium: {summary.medium_priority}</Badge>
-              <Badge variant="secondary" className="px-4 py-2 text-sm">Low: {summary.low_priority}</Badge>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Natural Language Summary */}
-      {isExpanded && summary && features.length > 0 && (
-        <Card className="border-purple-300 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 shadow-xl">
-          <CardContent className="pt-6">
-            <div className="prose prose-sm max-w-none">
-              <h3 className="text-xl font-bold text-gradient mb-3">📊 Analysis Summary</h3>
-              <p className="text-gray-700 mb-3">
-                I've analyzed <strong>{summary.total_competitors} competitor websites</strong> and compared them with your site. 
-                Here's what I found:
-              </p>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-4 border border-purple-200 shadow-md">
-                <p className="text-gray-800 mb-2">
-                  <strong>Missing Features:</strong> Your competitors have <strong>{summary.total_gaps} features</strong> that 
-                  your site doesn't currently have.
-                </p>
-                <ul className="list-none space-y-1.5 text-gray-700 ml-0">
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 text-lg">•</span>
-                    <span><strong>{summary.high_priority} high-priority</strong> features (found in most competitors)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 text-lg">•</span>
-                    <span><strong>{summary.medium_priority} medium-priority</strong> features (found in some competitors)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-600 text-lg">•</span>
-                    <span><strong>{summary.low_priority} low-priority</strong> features (found in few competitors)</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 border border-purple-300 shadow-md">
-                <p className="text-purple-900 font-bold mb-2 flex items-center gap-2">
-                  <span className="text-xl">💡</span> What should I implement next?
-                </p>
-                <p className="text-gray-800 text-sm">
-                  Review the feature cards below. Each one shows the priority score, how many competitors have it, 
-                  estimated effort, and implementation notes. <strong className="text-purple-900">Click "Select for Implementation"</strong> on the 
-                  feature you'd like me to work on next!
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          <button className="p-1 hover:bg-white/5 rounded transition-colors text-zinc-500">
+            {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
 
       {isExpanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {features.map((feature) => (
-          <Card 
-            key={feature.id} 
-            className={`glass-card rounded-xl shadow-lg hover:shadow-2xl smooth-transition ${
-              selectedFeature === feature.id ? 'border-2 border-green-500 bg-green-50/30' : 'hover:scale-[1.02]'
-            }`}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    {feature.name}
-                    <Badge className={`${getPriorityColor(feature.priority_score)} text-white shadow-md text-xs`}>
-                      {getPriorityLabel(feature.priority_score)}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription className="text-sm mt-1">{feature.description}</CardDescription>
-                </div>
-                <div className="text-right bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-2 ml-2">
-                  <div className="text-2xl font-bold text-gradient">{feature.priority_score}/10</div>
-                  <div className="text-xs text-gray-600">Priority</div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-purple-50 p-2 rounded-lg">
-                  <span className="font-semibold text-purple-900 text-xs">Found in:</span>
-                  <p className="text-gray-700 mt-1 text-xs">{feature.frequency_percentage}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.found_in.slice(0, 2).join(', ')}</p>
-                </div>
-                <div className="bg-blue-50 p-2 rounded-lg">
-                  <span className="font-semibold text-blue-900 text-xs">Effort:</span>
-                  <p className="text-gray-700 mt-1 text-xs">{feature.estimated_effort}</p>
-                </div>
-                <div className="bg-pink-50 p-2 rounded-lg">
-                  <span className="font-semibold text-pink-900 text-xs">Complexity:</span>
-                  <p className="text-gray-700 capitalize mt-1 text-xs">{feature.complexity}</p>
-                </div>
-                <div className="bg-green-50 p-2 rounded-lg">
-                  <span className="font-semibold text-green-900 text-xs">Impact:</span>
-                  <p className="text-gray-700 capitalize mt-1 text-xs">{feature.business_impact}</p>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {features.map((feature) => {
+            const isHigh = feature.priority_score >= 7;
+            const isMed = feature.priority_score >= 4 && feature.priority_score < 7;
+            const priorityColor = isHigh ? 'text-red-400' : isMed ? 'text-amber-400' : 'text-blue-400';
+            const priorityBg = isHigh ? 'bg-red-500/10 border-red-500/20' : isMed ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20';
+            const isSelected = selectedFeature === feature.id;
 
-              <div className="bg-gradient-to-r from-gray-50 to-purple-50 p-3 rounded-lg border border-purple-200">
-                <p className="font-semibold mb-1 text-purple-900 text-xs">📝 Implementation Notes:</p>
-                <p className="text-gray-700 text-xs line-clamp-2">{feature.implementation_notes}</p>
-              </div>
-
-              <Button
-                onClick={() => handleSelectFeature(feature.id)}
-                disabled={selectedFeature === feature.id}
-                className={`w-full py-5 text-base font-semibold ${
-                  selectedFeature === feature.id 
-                    ? 'bg-green-600 hover:bg-green-700' 
-                    : 'gradient-button'
-                } text-white`}
-                variant={selectedFeature === feature.id ? 'default' : 'default'}
+            return (
+              <div 
+                key={feature.id} 
+                className={`premium-card p-6 flex flex-col justify-between transition-all duration-300 ${
+                  isSelected ? 'border-white/40 bg-white/[0.05]' : 'hover:bg-white/[0.03] hover:border-white/10'
+                }`}
               >
-                {selectedFeature === feature.id ? '✓ Selected for Implementation' : 'Select for Implementation'}
-              </Button>
-            </CardContent>
-          </Card>
-          ))}
+                <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="pr-4">
+                      <h4 className="text-lg font-bold text-white mb-2 leading-tight">{feature.name}</h4>
+                      <p className="text-[12px] text-zinc-400 leading-relaxed">{feature.description}</p>
+                    </div>
+                    <div className={`flex flex-col items-center justify-center p-3 rounded-lg border ${priorityBg} shrink-0`}>
+                      <span className={`text-xl font-bold ${priorityColor}`}>{feature.priority_score}</span>
+                      <span className={`text-[8px] font-black uppercase tracking-widest ${priorityColor} mt-1`}>Priority</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="bg-black/40 border border-white/5 p-3 rounded-lg">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Adoption Rate</p>
+                      <p className="text-[11px] text-zinc-300 font-medium">{feature.frequency_percentage}</p>
+                    </div>
+                    <div className="bg-black/40 border border-white/5 p-3 rounded-lg">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Complexity</p>
+                      <p className="text-[11px] text-zinc-300 font-medium capitalize">{feature.complexity}</p>
+                    </div>
+                    <div className="bg-black/40 border border-white/5 p-3 rounded-lg col-span-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Implementation Notes</p>
+                      <p className="text-[11px] text-zinc-400 line-clamp-2">{feature.implementation_notes}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSelectFeature(feature.id)}
+                  disabled={isSelected}
+                  className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    isSelected 
+                      ? 'bg-white text-black font-bold opacity-100 cursor-default' 
+                      : 'bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] text-white font-medium hover:border-white/[0.2]'
+                  }`}
+                >
+                  {isSelected ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-xs uppercase tracking-wider">Queued for AI</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4" />
+                      <span className="text-xs uppercase tracking-wider">Implement Feature</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
