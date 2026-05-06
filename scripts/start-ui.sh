@@ -35,11 +35,19 @@ if [ ! -d "ai-engine-ui/node_modules" ]; then
     cd "$ROOT_DIR"
 fi
 
+echo "🗄️ Starting Redis via Docker..."
+docker compose up -d redis
+
 echo "🔧 Starting AI Engine Backend..."
 cd src
 python3 main_with_config.py &
 BACKEND_PID=$!
+
+echo "⚙️ Starting Celery Worker..."
+celery -A celery_app worker --loglevel=info &
+CELERY_PID=$!
 cd "$ROOT_DIR"
+
 
 echo "⏳ Waiting for backend to start..."
 sleep 5
@@ -65,7 +73,9 @@ cleanup() {
     echo ""
     echo "🛑 Stopping services..."
     kill $BACKEND_PID 2>/dev/null
+    kill $CELERY_PID 2>/dev/null
     kill $UI_PID 2>/dev/null
+    docker compose stop redis
     echo "✅ Services stopped"
     exit 0
 }

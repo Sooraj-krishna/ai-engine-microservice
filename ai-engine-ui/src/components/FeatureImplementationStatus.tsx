@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Loader2, CheckCircle2, Clock, PlayCircle, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, Loader2, CheckCircle2, Clock, PlayCircle, XCircle } from 'lucide-react';
 
 interface SelectedFeature {
   id: string;
@@ -18,6 +18,11 @@ interface SelectedFeature {
   selected_at: string;
   implementation_status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   status_updated_at?: string;
+  status_history?: {
+    status: string;
+    notes: string;
+    timestamp: string;
+  }[];
 }
 
 interface ImplementationSummary {
@@ -238,6 +243,42 @@ export default function FeatureImplementationStatus() {
                   <p className="text-xs text-white font-bold capitalize">{feature.business_impact}</p>
                 </div>
               </div>
+              {/* Progress Detail / Status Notes */}
+              {feature.status_history && feature.status_history.length > 0 && (
+                <div className="mb-6 animate-in fade-in duration-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20 animate-pulse" />
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Current Phase</p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                    <p className="text-[11px] text-zinc-300 leading-relaxed italic">
+                      "{feature.status_history[feature.status_history.length - 1].notes}"
+                    </p>
+                    
+                    {/* Extract PR URL if present */}
+                    {feature.status_history[feature.status_history.length - 1].notes.includes('http') && (
+                      <div className="mt-4">
+                        {(() => {
+                          const match = feature.status_history[feature.status_history.length - 1].notes.match(/https?:\/\/[^\s]+/);
+                          if (match) {
+                            return (
+                              <a 
+                                href={match[0]} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500 text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all"
+                              >
+                                Review Pull Request <ChevronRight className="h-3 w-3" />
+                              </a>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2">
                 {feature.implementation_status === 'pending' && (

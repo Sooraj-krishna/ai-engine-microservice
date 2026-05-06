@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from '@/lib/config';
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle2, XCircle, Clock, History, Cpu } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Clock, History, Cpu, Shield } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -19,14 +19,23 @@ export function TaskQueue() {
   const fetchTasks = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/tasks`);
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch tasks:', error);
-    } finally {
+      const data = await response.json();
+      setTasks(data.tasks);
       setLoading(false);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setLoading(false);
+    }
+  };
+
+  const approveBug = async (bugId: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/bugs/${bugId}/approve`, {
+        method: 'POST'
+      });
+      fetchTasks(); // Refresh list
+    } catch (error) {
+      console.error('Error approving bug:', error);
     }
   };
 
@@ -42,6 +51,7 @@ export function TaskQueue() {
       case 'FAILURE': return <XCircle className="h-3 w-3 text-white" />;
       case 'STARTED':
       case 'PROGRESS': return <Loader2 className="h-3 w-3 animate-spin text-white" />;
+      case 'PENDING': return <Shield className="h-3 w-3 text-amber-400" />;
       default: return <Clock className="h-3 w-3 text-zinc-700" />;
     }
   };
@@ -88,9 +98,23 @@ export function TaskQueue() {
               }`}>
                 {task.status}
               </span>
-              <span className="text-[8px] text-zinc-800 font-bold tabular-nums">
-                {new Date(task.timestamp).toLocaleTimeString([], { hour12: false })}
-              </span>
+              <div className="flex items-center gap-2">
+                {task.status === 'PENDING' && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      approveBug(task.id);
+                    }}
+                    className="px-2 py-0.5 bg-white text-black text-[8px] font-bold rounded hover:bg-zinc-200 transition-colors flex items-center gap-1"
+                  >
+                    <Shield className="h-2 w-2" />
+                    <span>AUTHORIZE</span>
+                  </button>
+                )}
+                <span className="text-[8px] text-zinc-800 font-bold tabular-nums">
+                  {new Date(task.timestamp).toLocaleTimeString([], { hour12: false })}
+                </span>
+              </div>
             </div>
           </div>
         ))

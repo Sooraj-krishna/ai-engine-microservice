@@ -15,5 +15,5 @@
   ],
   "enabled": true,
   "max_auto_approvals_per_day": 50,
-  "emergency_pause": false
+  "emergency_pause": true
 }

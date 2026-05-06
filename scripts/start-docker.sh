@@ -62,14 +62,14 @@ fi
 
 # Build and start services
 echo "🏗️  Building and starting services..."
-"${COMPOSE_BIN}" up $DETACHED --build
+${COMPOSE_CMD[@]} up $DETACHED --build
 
 if [ -n "$DETACHED" ]; then
     echo ""
     echo -e "${GREEN}✨ All services started successfully!${NC}"
     echo ""
     echo "📊 Service Status:"
-    "${COMPOSE_BIN}" ps
+    ${COMPOSE_CMD[@]} ps
     echo ""
     echo "🌐 Access points:"
     echo "  • Frontend UI:  http://localhost:3000"

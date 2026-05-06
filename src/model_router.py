@@ -188,9 +188,9 @@ def _query_gemini_api(
         except Exception as e:
             last_error = e
             error_str = str(e).lower()
-            if "404" in error_str or "not found" in error_str or "not supported" in error_str:
-                # Try next alternative
-                print(f"[ModelRouter] Model {model_name} not available, trying next...")
+            if "404" in error_str or "not found" in error_str or "not supported" in error_str or "429" in error_str or "quota" in error_str:
+                # Try next alternative (including for quota errors - next model might have separate quota)
+                print(f"[ModelRouter] Model {model_name} failed ({'Quota' if '429' in error_str else 'Availability'}), trying next alternative...")
                 continue
             else:
                 # Other error, don't retry

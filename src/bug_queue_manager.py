@@ -25,12 +25,14 @@ class BugQueueManager:
         
         self.queue_file = self.queue_dir / "bug_queue.json"
         self.processing_file = self.queue_dir / "processing.json"
-        self.detected_file = self.queue_dir / "detected_bugs.json"  # NEW: Detected but not approved
+        self.detected_file = self.queue_dir / "detected_bugs.json"
+        self.pending_approval_file = self.queue_dir / "pending_approval.json"
         
         # In-memory queue for performance
         self.queue = self._load_queue()
         self.processing = self._load_processing()
-        self.detected_bugs = self._load_detected_bugs()  # NEW: Load detected bugs
+        self.detected_bugs = self._load_detected_bugs()
+        self.pending_approval = self._load_pending_approval()
         
         # Lock for thread-safe operations
         self.lock = threading.Lock()
@@ -66,6 +68,9 @@ class BugQueueManager:
             
         if self._has_file_changed(self.detected_file):
             self.detected_bugs = self._load_detected_bugs()
+            
+        if self._has_file_changed(self.pending_approval_file):
+            self.pending_approval = self._load_pending_approval()
     
     def _robust_read(self, file_path: Path, default_value=None) -> any:
         """Read a JSON file robustly with retries."""
@@ -300,6 +305,52 @@ class BugQueueManager:
             self._save_processing()
             
             print(f"[BUG_QUEUE] Bug {bug_id} marked as completed")
+
+    def mark_pending_approval(self, bug_id: str, result: Dict):
+        """Mark a bug as pending user approval for its plan."""
+        with self.lock:
+            if bug_id not in self.processing:
+                print(f"[BUG_QUEUE] Bug {bug_id} not found in processing for approval")
+                return
+            
+            bug_item = self.processing.pop(bug_id)
+            bug_item["status"] = "pending_approval"
+            bug_item["result"] = result
+            
+            self.pending_approval[bug_id] = bug_item
+            
+            # Save state
+            self._save_processing()
+            self._save_pending_approval()
+            
+            print(f"[BUG_QUEUE] Bug {bug_id} moved to pending approval")
+
+    def get_pending_approval_bugs(self) -> List[Dict]:
+        """Get all bugs awaiting plan approval."""
+        self._sync_with_disk()
+        with self.lock:
+            return list(self.pending_approval.values())
+
+    def approve_plan(self, bug_id: str) -> bool:
+        """Approve a plan and move bug back to queue for execution."""
+        self._sync_with_disk()
+        with self.lock:
+            if bug_id not in self.pending_approval:
+                print(f"[BUG_QUEUE] Bug {bug_id} not found in pending approval")
+                return False
+            
+            bug_item = self.pending_approval.pop(bug_id)
+            bug_item["status"] = "approved" # Will be picked up by queue processor
+            bug_item["requires_approval"] = False
+            
+            # Put back in queue (at the front if possible)
+            self.queue.appendleft(bug_item)
+            
+            self._save_pending_approval()
+            self._save_queue()
+            
+            print(f"[BUG_QUEUE] Plan for bug {bug_id} approved and requeued for execution")
+            return True
     
     def mark_failed(self, bug_id: str, error: str):
         """
@@ -406,6 +457,14 @@ class BugQueueManager:
     def _save_detected_bugs(self):
         """Save detected bugs to disk."""
         self._atomic_write(self.detected_file, self.detected_bugs)
+        
+    def _load_pending_approval(self) -> Dict:
+        """Load bugs pending approval from disk."""
+        return self._robust_read(self.pending_approval_file, default_value={})
+        
+    def _save_pending_approval(self):
+        """Save bugs pending approval to disk."""
+        self._atomic_write(self.pending_approval_file, self.pending_approval)
     
     def _save_to_history(self, bug_item: Dict):
         """Save completed/failed bug to history."""

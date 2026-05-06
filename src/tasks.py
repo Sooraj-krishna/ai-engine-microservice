@@ -195,3 +195,40 @@ def task_analyze_competitors(self, own_site_url, competitor_urls, depth, premium
         "task_id": self.request.id,
         "result_file": str(result_file)
     }
+
+@celery_app.task(
+    name="tasks.execute_implementation",
+    bind=True,
+    soft_time_limit=600,
+    time_limit=660,
+)
+def task_execute_implementation(self, feature_id):
+    """Celery task for executing a feature implementation."""
+    import asyncio
+    import traceback
+    
+    print(f"[CELERY] Starting implementation task {self.request.id} for feature {feature_id}")
+    
+    async def run_impl():
+        from feature_implementation_manager import FeatureImplementationManager
+        manager = FeatureImplementationManager()
+        return await manager.execute_implementation(feature_id)
+        
+    try:
+        # Run async function in sync task
+        try:
+            result = asyncio.run(run_impl())
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(run_impl())
+            finally:
+                loop.close()
+                
+        print(f"[CELERY] Implementation task {self.request.id} completed.")
+        return {"status": "completed", "result": result}
+    except Exception as e:
+        print(f"[CELERY] Implementation task {self.request.id} failed: {e}")
+        traceback.print_exc()
+        return {"status": "error", "error": str(e)}

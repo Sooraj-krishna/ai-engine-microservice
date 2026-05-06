@@ -135,19 +135,11 @@ class QueueProcessor:
                 print(f"[QUEUE_PROCESSOR] Plan generation failed: {error_msg}")
                 
                 # Enhanced quota error detection (catches wrapped errors)
-                is_quota_error = any([
-                    "429" in error_msg,
-                    "quota" in error_msg.lower(),
-                    "exceeded" in error_msg.lower(),
-                    "retry" in error_msg.lower() and "limit" in error_msg.lower(),
-                    "Plan generation failed. Please try rephrasing" in error_msg,  # Wrapped quota error
-                ])
-                
-                if is_quota_error:
+                if "404" in error_msg or "not found" in error_msg or "not supported" in error_msg or "429" in error_msg or "quota" in error_msg:
                     print(f"[QUEUE_PROCESSOR] ⚠️ Detected quota error (wrapped): {error_msg[:100]}")
                     # Requeue the bug so it's not stuck in processing
                     bug_queue_manager.requeue(bug_id)
-                    self._handle_quota_error()
+                    await self._handle_quota_error()
                     return
                 
                 # Track consecutive failures (ANY error type)
@@ -220,7 +212,7 @@ class QueueProcessor:
                     "bug": bug
                 }
                 
-                bug_queue_manager.mark_completed(bug_id, result)
+                bug_queue_manager.mark_pending_approval(bug_id, result)
                 
                 # Notify user via notification system
                 await self._notify_user_of_critical_bug(bug, plan, severity)
@@ -382,7 +374,7 @@ class QueueProcessor:
                 "error": str(e)
             }
     
-    def _handle_quota_error(self):
+    async def _handle_quota_error(self):
         """Handle API quota exhaustion - circuit breaker pattern."""
         self.quota_error_count += 1
         self.last_quota_error = datetime.now()
@@ -400,7 +392,7 @@ class QueueProcessor:
             
             # Notify user
             try:
-                notification_service.notify(
+                await notification_service.notify(
                     message="🚨 Queue processor paused due to API quota exhaustion. Please check your Gemini API limits.",
                     severity="critical",
                     type="quota_exhausted",

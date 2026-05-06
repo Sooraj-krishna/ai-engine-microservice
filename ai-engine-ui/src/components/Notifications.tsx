@@ -106,9 +106,43 @@ export function Notifications() {
                   {new Date(notif.timestamp).toLocaleTimeString([], { hour12: false })}
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 leading-relaxed font-light group-hover:text-zinc-300 transition-colors">
+              <p className="text-[11px] text-zinc-500 leading-relaxed font-light group-hover:text-zinc-300 transition-colors mb-3">
                 {notif.message}
               </p>
+
+              {/* Actionable Data (PR Links, etc) */}
+              {notif.data && (
+                <div className="space-y-2">
+                  {notif.data.pr_url && (
+                    <a 
+                      href={notif.data.pr_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all"
+                    >
+                      View Pull Request <ChevronRight className="h-3 w-3" />
+                    </a>
+                  )}
+                  
+                  {notif.data.files && notif.data.files.length > 0 && (
+                    <div className="bg-black/20 rounded-lg p-2 border border-white/5">
+                      <p className="text-[8px] font-black uppercase tracking-tighter text-zinc-600 mb-1">Affected Files</p>
+                      <div className="flex flex-wrap gap-1">
+                        {notif.data.files.slice(0, 3).map((f: string, i: number) => (
+                          <span key={i} className="text-[8px] px-1.5 py-0.5 bg-white/5 rounded text-zinc-400 font-mono">
+                            {f.split('/').pop()}
+                          </span>
+                        ))}
+                        {notif.data.files.length > 3 && (
+                          <span className="text-[8px] px-1.5 py-0.5 bg-white/5 rounded text-zinc-600">
+                            +{notif.data.files.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button 

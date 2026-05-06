@@ -1,6 +1,6 @@
 [
   {
-    "id": "bug_20260506_031201_120936",
+    "id": "bug_20260506_203211_785372",
     "bug": {
       "type": "dependency_vulnerability",
       "severity": "critical",
@@ -30,14 +30,48 @@
     "severity": "critical",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-05-06T03:12:01.120957",
+    "detected_at": "2026-05-06T20:32:11.785399",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,
     "error": null
   },
   {
-    "id": "bug_20260506_031201_120962",
+    "id": "bug_20260506_203211_785412",
+    "bug": {
+      "type": "bug_report",
+      "severity": "medium",
+      "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts. (found in 1 file(s))",
+      "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+      "framework": "nextjs",
+      "language": "n/a",
+      "target_file": "bug_report.md",
+      "data": {
+        "type": "Data Persistence and State Management Error",
+        "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts.",
+        "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+        "nodes_affected": 600,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "bug_report.md"
+      ],
+      "consolidated": true,
+      "original_count": 600
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:11.785414",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203211_785416",
     "bug": {
       "type": "accessibility",
       "severity": "medium",
@@ -49,7 +83,7 @@
       "data": {
         "type": "Missing Accessible Label",
         "element": "button",
-        "nodes_affected": 14,
+        "nodes_affected": 15,
         "files_affected": 1
       },
       "safe_mode": true,
@@ -58,19 +92,53 @@
         "index.html"
       ],
       "consolidated": true,
-      "original_count": 14
+      "original_count": 15
     },
     "severity": "medium",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-05-06T03:12:01.120966",
+    "detected_at": "2026-05-06T20:32:11.785418",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,
     "error": null
   },
   {
-    "id": "bug_20260506_031201_120968",
+    "id": "bug_20260506_203211_785419",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Slow First Contentful Paint (found in 1 file(s))",
+      "details": "FCP is 1604ms, should be under 1.5s",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Slow FCP",
+        "fcp": 1604,
+        "threshold": 1500,
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:11.785421",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203211_785423",
     "bug": {
       "type": "responsive",
       "severity": "medium",
@@ -90,7 +158,400 @@
     "severity": "medium",
     "requires_approval": true,
     "status": "detected",
-    "detected_at": "2026-05-06T03:12:01.120971",
+    "detected_at": "2026-05-06T20:32:11.785425",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203217_621231",
+    "bug": {
+      "type": "dependency_vulnerability",
+      "severity": "critical",
+      "description": "npm: Vulnerability in @esbuild-kit/core-utils (found in 1 file(s))",
+      "details": "Package: @esbuild-kit/core-utils\nSeverity: moderate\nCVE: No CVE",
+      "framework": "nextjs",
+      "language": "dependencies",
+      "target_file": "package.json",
+      "data": {
+        "type": "npm vulnerability",
+        "package": "@esbuild-kit/core-utils",
+        "severity": "moderate",
+        "cve": "No CVE",
+        "scanner": "npm audit",
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": true,
+      "is_actual_bug": true,
+      "affected_files": [
+        "package.json"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "critical",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:17.621257",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203217_621267",
+    "bug": {
+      "type": "bug_report",
+      "severity": "medium",
+      "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts. (found in 1 file(s))",
+      "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+      "framework": "nextjs",
+      "language": "n/a",
+      "target_file": "bug_report.md",
+      "data": {
+        "type": "Data Persistence and State Management Error",
+        "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts.",
+        "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+        "nodes_affected": 600,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "bug_report.md"
+      ],
+      "consolidated": true,
+      "original_count": 600
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:17.621270",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203217_621272",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Interactive element missing accessible label (found in 1 file(s))",
+      "details": "button element (id: no-id) has no accessible label",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Missing Accessible Label",
+        "element": "button",
+        "nodes_affected": 15,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 15
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:17.621274",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203217_621275",
+    "bug": {
+      "type": "responsive",
+      "severity": "medium",
+      "description": "Horizontal scrolling detected",
+      "details": "Page has horizontal scroll at Mobile (iPhone) viewport (375x667)",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Horizontal Scroll",
+        "viewport": "Mobile (iPhone)",
+        "dimensions": "375x667"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:17.621278",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_203217_621283",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Performance issue: First Contentful Paint (found in 1 file(s))",
+      "details": "First Contentful Paint marks the time at which the first text or image is painted. [Learn more about the First Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint/).",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "First Contentful Paint",
+        "score": 0.41,
+        "details": {},
+        "nodes_affected": 2,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 2
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:32:17.621285",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125000",
+    "bug": {
+      "type": "dependency_vulnerability",
+      "severity": "critical",
+      "description": "npm: Vulnerability in @esbuild-kit/core-utils (found in 1 file(s))",
+      "details": "Package: @esbuild-kit/core-utils\nSeverity: moderate\nCVE: No CVE",
+      "framework": "nextjs",
+      "language": "dependencies",
+      "target_file": "package.json",
+      "data": {
+        "type": "npm vulnerability",
+        "package": "@esbuild-kit/core-utils",
+        "severity": "moderate",
+        "cve": "No CVE",
+        "scanner": "npm audit",
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": true,
+      "is_actual_bug": true,
+      "affected_files": [
+        "package.json"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "critical",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125020",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125025",
+    "bug": {
+      "type": "type_error",
+      "severity": "high",
+      "description": "TS2339: Property 'nonExistentProperty' does not exist on type '{ image: string; id: string; name: string; description: string; brand: string; price: string; originalPrice: string | null; category: string; rating: string; reviewCount: number; inStock: boolean; badge: string | null; }'. (found in 2 file(s))",
+      "details": "Property 'nonExistentProperty' does not exist on type '{ image: string; id: string; name: string; description: string; brand: string; price: string; originalPrice: string | null; category: string; rating: string; reviewCount: number; inStock: boolean; badge: string | null; }'.",
+      "framework": "nextjs",
+      "language": "typescript",
+      "target_file": "../../home/devils_hell/Desktop/My Works/Project/ai-engine-microservice/src/client/src/components/ProductCard.tsx",
+      "data": {
+        "type": "TypeScript Error",
+        "error_code": "TS2339",
+        "line": 15,
+        "column": 47,
+        "nodes_affected": 4,
+        "files_affected": 2
+      },
+      "safe_mode": true,
+      "requires_approval": true,
+      "is_actual_bug": true,
+      "affected_files": [
+        "../../home/devils_hell/Desktop/My Works/Project/ai-engine-microservice/src/client/src/components/ProductCard.tsx",
+        "../../home/devils_hell/Desktop/My Works/Project/ai-engine-microservice/src/server/routes.ts"
+      ],
+      "consolidated": true,
+      "original_count": 4
+    },
+    "severity": "high",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125028",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125030",
+    "bug": {
+      "type": "bug_report",
+      "severity": "medium",
+      "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts. (found in 1 file(s))",
+      "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+      "framework": "nextjs",
+      "language": "n/a",
+      "target_file": "bug_report.md",
+      "data": {
+        "type": "Data Persistence and State Management Error",
+        "description": "Potential use of in-memory storage detected in JavaScript file. Data may be lost on server restarts.",
+        "details": "In-memory array manipulation found in: /tmp/ai_engine_repo/node_modules/pseudomap/test/basic.js",
+        "nodes_affected": 600,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "bug_report.md"
+      ],
+      "consolidated": true,
+      "original_count": 600
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125033",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125034",
+    "bug": {
+      "type": "accessibility",
+      "severity": "medium",
+      "description": "Interactive element missing accessible label (found in 1 file(s))",
+      "details": "button element (id: no-id) has no accessible label",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Missing Accessible Label",
+        "element": "button",
+        "nodes_affected": 15,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 15
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125036",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125038",
+    "bug": {
+      "type": "performance",
+      "severity": "medium",
+      "description": "Slow First Contentful Paint (found in 1 file(s))",
+      "details": "FCP is 1924ms, should be under 1.5s",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Slow FCP",
+        "fcp": 1924,
+        "threshold": 1500,
+        "nodes_affected": 3,
+        "files_affected": 1
+      },
+      "safe_mode": true,
+      "requires_approval": false,
+      "affected_files": [
+        "index.html"
+      ],
+      "consolidated": true,
+      "original_count": 3
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125040",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125042",
+    "bug": {
+      "type": "responsive",
+      "severity": "medium",
+      "description": "Horizontal scrolling detected",
+      "details": "Page has horizontal scroll at Mobile (iPhone) viewport (375x667)",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "index.html",
+      "data": {
+        "type": "Horizontal Scroll",
+        "viewport": "Mobile (iPhone)",
+        "dimensions": "375x667"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125044",
+    "approved_at": null,
+    "processing_started_at": null,
+    "completed_at": null,
+    "error": null
+  },
+  {
+    "id": "bug_20260506_205808_125045",
+    "bug": {
+      "type": "incomplete_code",
+      "severity": "medium",
+      "description": "Empty function detected",
+      "details": "Empty function body found in dist/public/assets/index-DbezEHta.js. This might be a placeholder.",
+      "framework": "nextjs",
+      "language": "javascript",
+      "target_file": "dist/public/assets/index-DbezEHta.js",
+      "data": {
+        "type": "Empty Function",
+        "file": "dist/public/assets/index-DbezEHta.js"
+      },
+      "safe_mode": true,
+      "requires_approval": false
+    },
+    "severity": "medium",
+    "requires_approval": true,
+    "status": "detected",
+    "detected_at": "2026-05-06T20:58:08.125047",
     "approved_at": null,
     "processing_started_at": null,
     "completed_at": null,

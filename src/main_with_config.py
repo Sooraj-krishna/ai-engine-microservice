@@ -126,6 +126,8 @@ health_status = {
     "environment": os.getenv("ENVIRONMENT", "development"),
     "website_url": os.getenv("WEBSITE_URL"),
     "monitoring_mode": os.getenv("MONITORING_MODE", "simple"),
+    "bugs_detected": 0,
+    "bugs_queued": 0,
     "safety_features": {
         "validation_enabled": True,
         "rollback_enabled": True,
@@ -208,6 +210,17 @@ def run_engine():
 def get_detailed_status():
     """Get detailed status including validation and rollback history."""
     try:
+        # Update health status counts from bug_queue_manager
+        try:
+            from bug_queue_manager import bug_queue_manager
+            queue_status = bug_queue_manager.get_queue_status()
+            detected_bugs = bug_queue_manager.get_detected_bugs()
+            
+            health_status["bugs_queued"] = queue_status.get("queued", 0) + queue_status.get("processing", 0)
+            health_status["bugs_detected"] = len(detected_bugs)
+        except Exception as e:
+            print(f"[STATUS] Error updating bug counts: {e}")
+
         validation_report = code_validator.get_validation_report()
         rollback_history = rollback_manager.get_rollback_history()
         
@@ -475,6 +488,7 @@ def get_pending_bugs():
         from bug_queue_manager import bug_queue_manager
         
         detected_bugs = bug_queue_manager.get_detected_bugs()
+        pending_approval_bugs = bug_queue_manager.get_pending_approval_bugs()
         
         # Group bugs by severity
         bugs_by_severity = {
@@ -484,6 +498,7 @@ def get_pending_bugs():
             "low": []
         }
         
+        # Add detected bugs
         for item in detected_bugs:
             severity = item.get("severity", "low")
             bugs_by_severity.setdefault(severity, []).append({
@@ -494,7 +509,24 @@ def get_pending_bugs():
                 "target_file": item["bug"].get("target_file"),
                 "detected_at": item.get("detected_at"),
                 "framework": item["bug"].get("framework"),
-                "language": item["bug"].get("language")
+                "language": item["bug"].get("language"),
+                "status": "detected"
+            })
+
+        # Add pending approval bugs (those that have a plan)
+        for item in pending_approval_bugs:
+            severity = item.get("severity", "low")
+            bugs_by_severity.setdefault(severity, []).append({
+                "id": item["id"],
+                "type": item["bug"].get("type"),
+                "description": f"[PLAN READY] {item['bug'].get('description')}",
+                "severity": severity,
+                "target_file": item["bug"].get("target_file"),
+                "detected_at": item.get("detected_at"),
+                "framework": item["bug"].get("framework"),
+                "language": item["bug"].get("language"),
+                "status": "pending_approval",
+                "plan": item.get("result", {}).get("plan")
             })
         
         total = sum(len(bugs) for bugs in bugs_by_severity.values())
@@ -521,20 +553,18 @@ def approve_bug(bug_id: str):
     try:
         from bug_queue_manager import bug_queue_manager
         
-        # Use new approve_bug_to_queue method (enforces 3-bug limit)
+        # Try approving as a plan first
+        success = bug_queue_manager.approve_plan(bug_id)
+        if success:
+            return JSONResponse(content={"success": True, "message": "Plan approved and execution queued"})
+
+        # Otherwise, try approving as a new detected bug
         result = bug_queue_manager.approve_bug_to_queue(bug_id)
         
         if not result.get("success"):
-            error_msg = result.get("error", "Approval failed")
-            print(f"[API] Approval failed for {bug_id}: {error_msg}")
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": error_msg,
-                    "bug_id": bug_id
-                }
-            )
-        
+            error_msg = result.get("error", "Bug not found or queue full")
+            return JSONResponse(status_code=400, content={"error": error_msg})
+            
         print(f"[API] Bug {bug_id} approved ({result.get('queued_count')}/3 queued)")
         
         return JSONResponse(content={
@@ -877,17 +907,54 @@ async def analyze_competitors(competitor_urls: list[str] = None, depth: str = No
 async def list_recent_tasks():
     """List recent trackable tasks with their statuses."""
     from celery.result import AsyncResult
+    from bug_queue_manager import bug_queue_manager
     results = []
     
+    # Add Celery tasks
     for task_info in task_history:
-        res = AsyncResult(task_info["id"], app=celery_app)
-        results.append({
-            "id": task_info["id"],
-            "name": task_info["name"],
-            "timestamp": task_info["timestamp"],
-            "status": res.status,
-            "ready": res.ready()
-        })
+        try:
+            res = AsyncResult(task_info["id"], app=celery_app)
+            results.append({
+                "id": task_info["id"],
+                "name": task_info["name"],
+                "timestamp": task_info["timestamp"],
+                "status": res.status,
+                "ready": res.ready(),
+                "type": "celery"
+            })
+        except:
+            pass
+            
+    # Add AI Bug Queue tasks (In Progress)
+    try:
+        in_progress_bugs = bug_queue_manager.get_in_progress_bugs()
+        for bug in in_progress_bugs:
+            results.append({
+                "id": bug["bug_id"],
+                "name": f"AI Fix: {bug['bug'].get('description', 'Bug')[:30]}...",
+                "timestamp": bug.get("processing_started_at") or datetime.now().isoformat(),
+                "status": "PROGRESS",
+                "ready": False,
+                "progress": bug.get("progress", {}),
+                "type": "ai_bug_fix"
+            })
+            
+        # Add Pending Approval bugs
+        pending_approval = bug_queue_manager.get_pending_approval_bugs()
+        for bug in pending_approval:
+            results.append({
+                "id": bug["id"],
+                "name": f"Awaiting Review: {bug['bug'].get('description', 'Bug')[:30]}...",
+                "timestamp": bug.get("detected_at") or datetime.now().isoformat(),
+                "status": "PENDING",
+                "ready": True,
+                "type": "ai_bug_fix"
+            })
+    except Exception as e:
+        print(f"[TASKS] Error adding bug queue tasks: {e}")
+    
+    # Sort by timestamp descending
+    results.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     
     return JSONResponse(content={"tasks": results})
 
@@ -1092,23 +1159,22 @@ async def update_feature_status(feature_id: str, request: dict):
     try:
         # CRITICAL: If status is changing to in_progress, execute the implementation!
         if new_status == "in_progress":
-            print(f"[FEATURE_STATUS] Starting implementation execution for {feature_id}")
+            print(f"[FEATURE_STATUS] Starting implementation execution for {feature_id} in background")
             
             # Update status first
             updated_feature = feature_implementation_manager.update_feature_status(
                 feature_id, new_status, notes or "Implementation started"
             )
             
-            # Execute the actual implementation
-            execution_result = await feature_implementation_manager.execute_implementation(
-                feature_id
-            )
+            # Execute in background via Celery
+            from tasks import task_execute_implementation
+            task = task_execute_implementation.delay(feature_id)
             
             return JSONResponse(content={
-                "message": execution_result.get("message", "Implementation completed"),
+                "message": "Implementation started in background",
                 "feature": updated_feature,
-                "execution_result": execution_result,
-                "success": execution_result.get("success", False)
+                "task_id": task.id,
+                "success": True
             })
         else:
             # For other status changes, just update status

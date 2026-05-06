@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from model_router import _query_gemini_api
+from notification_service import notification_service
+
 
 
 class FeatureImplementationManager:
@@ -594,6 +596,16 @@ Make the plan practical and actionable.
         Returns:
             Execution result with files written and PR URL
         """
+        feature = self._get_feature_by_id(feature_id)
+        feature_name = feature.get("feature_name", "Feature") if feature else "Feature"
+        
+        await notification_service.notify(
+            f"Starting implementation for {feature_name}...",
+            severity="info",
+            type="feature_update",
+            data={"feature_id": feature_id, "step": "starting"}
+        )
+        
         print(f"[FEATURE_IMPL] Starting execution for feature: {feature_id}")
         
         # Get implementation plan and feature data
@@ -621,6 +633,12 @@ Make the plan practical and actionable.
                 from code_analyzer import CodeAnalyzer
                 
                 print(f"[FEATURE_IMPL] Analyzing codebase...")
+                await notification_service.notify(
+                    f"Analyzing codebase structure for {feature_name}...",
+                    severity="info",
+                    type="feature_update",
+                    data={"feature_id": feature_id, "step": "analyzing"}
+                )
                 repo_path = clone_or_pull_repo()
                 analyzer = CodeAnalyzer(repo_path)
                 analyzer.analyze_repository()
@@ -690,6 +708,12 @@ Make the plan practical and actionable.
                 }
             
             print(f"[FEATURE_IMPL] Generating code for {len(files_to_modify)} files...")
+            await notification_service.notify(
+                f"Generating implementation code for {len(files_to_modify)} files...",
+                severity="info",
+                type="feature_update",
+                data={"feature_id": feature_id, "step": "generating_code", "file_count": len(files_to_modify)}
+            )
             
             # NEW: Build list of files being created in this batch
             # These should be allowed for imports even though they don't exist yet
@@ -961,6 +985,12 @@ Make the plan practical and actionable.
             from github_handler import submit_fix_pr
             
             print(f"[FEATURE_IMPL] Submitting PR with {len(generated_files)} files...")
+            await notification_service.notify(
+                f"Submitting Pull Request to GitHub...",
+                severity="info",
+                type="feature_update",
+                data={"feature_id": feature_id, "step": "submitting_pr"}
+            )
             pr_url = submit_fix_pr(generated_files)
             
             if pr_url:
@@ -969,6 +999,17 @@ Make the plan practical and actionable.
                     feature_id, 
                     "completed",
                     f"Implementation completed. PR: {pr_url}"
+                )
+                
+                await notification_service.notify(
+                    f"Successfully implemented {feature_name}!",
+                    severity="success",
+                    type="feature_complete",
+                    data={
+                        "feature_id": feature_id,
+                        "pr_url": pr_url,
+                        "files": [f["path"] for f in generated_files]
+                    }
                 )
                 
                 return {
